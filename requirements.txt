@@ -2,3 +2,4 @@ de4l-geodata @ git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de
 python_dateutil==2.8.2
 pandas
 torch
+geopy

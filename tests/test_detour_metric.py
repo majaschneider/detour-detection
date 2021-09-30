@@ -105,6 +105,21 @@ class TestMetric(unittest.TestCase):
                 route_without_timestamps, temporal_distance=pd.Timedelta(value=1, unit="seconds")
             )
 
+    def test_reverse_geocode(self):
+        nominatim_url = "localhost:1234"
+
+        to_reverse = [
+            pt.Point([0.62235962758, 2.439017920469]),  # Tokyo Tower Tokyo, real coordinates
+            pt.Point([3.62235962758, 4.439017920469]),  # Radians values too high, bogus coordinates
+            [0.9166228376, 0.233458504512]  # Not an instance of geodata.point.Point
+        ]
+
+        reversed_route, failed_requests, wrong_values = detour_metric.reverse_geocode(to_reverse, nominatim_url)
+        # We expect one wrong value and two failed requests
+        self.assertEqual(reversed_route, [])
+        self.assertEqual(failed_requests, 2)
+        self.assertEqual(wrong_values, 1)
+
 
 if __name__ == "__main__":
     unittest.main()
