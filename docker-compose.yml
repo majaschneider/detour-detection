@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+    # Start a Nominatim instance that uses the latest version of Open Street Maps for Germany
+    nominatim:
+        container_name: nominatim-germany
+        image: mediagis/nominatim:3.7
+        restart: always
+        ports:
+            - "8080:8080"
+        environment:
+            # See https://github.com/mediagis/nominatim-docker/tree/master/3.7#configuration for more options
+            PBF_URL: https://download.geofabrik.de/europe/germany-latest.osm.pbf
+            # For updates:
+            REPLICATION_URL: https://download.geofabrik.de/europe/germany-updates/
+        volumes:
+            - nominatim-data:/var/lib/postgresql/12/main
+        shm_size: 3gb
+
+volumes:
+  nominatim-data:
