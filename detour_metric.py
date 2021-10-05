@@ -27,12 +27,12 @@ def select_samples(route, temporal_distance, start_timestamp=None):
     sampled_points : geodata.route.Route
         A route containing the sampled points according to the temporal distance.
     """
-    if not(isinstance(route, rt.Route) and route.has_timestamps()):
+    if not isinstance(route, rt.Route) or not route.has_timestamps():
         raise(ValueError(
-            "Wrong value for param route. Make sure it is of route.Route and its points are have timestamps."
+            "Wrong value for param route. Make sure it is of type route.Route and its points have timestamps."
          ))
 
-    if not(isinstance(temporal_distance, pd.Timedelta)) or temporal_distance.seconds < 0:
+    if not isinstance(temporal_distance, pd.Timedelta) or temporal_distance.seconds < 0:
         raise(ValueError(
             "Wrong value for param temporal distance. Make sure it is of type pandas.Timedelta and larger than zero."
         ))
@@ -40,7 +40,7 @@ def select_samples(route, temporal_distance, start_timestamp=None):
     sampled_points = rt.Route()
     current_idx = 0
 
-    # If start_timestamp is given, iterate over the route until it is reached
+    # If a start timestamp is given, iterate over the route until it is reached
     if start_timestamp is not None:
         if not isinstance(start_timestamp, pd.Timestamp):
             raise ValueError("Wrong value for start timestamp. Make sure it is of type pandas.Timestamp.")

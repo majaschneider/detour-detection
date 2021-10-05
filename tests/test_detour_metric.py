@@ -4,6 +4,7 @@ import datetime
 import pandas as pd
 from geodatasets import de4l
 from geodata import route as rt
+from geodata import point as pt
 
 import detour_metric
 
@@ -96,6 +97,13 @@ class TestMetric(unittest.TestCase):
             detour_metric.select_samples(rt.Route(), temporal_distance=pd.Timedelta(value=1, unit="seconds"))
             # Test if passing a wrong type for route leads to an error
             detour_metric.select_samples([[1, 1]], temporal_distance=pd.Timedelta(value=1, unit="seconds"))
+            # Test if passing a route containing points without timestamps leads to an error
+            route_without_timestamps = rt.Route()
+            route_without_timestamps.append(pt.Point([51.3396955, 12.3730747]))
+            route_without_timestamps.append(pt.Point([51.0504088, 13.7372621]))
+            detour_metric.select_samples(
+                route_without_timestamps, temporal_distance=pd.Timedelta(value=1, unit="seconds")
+            )
 
 
 if __name__ == "__main__":
