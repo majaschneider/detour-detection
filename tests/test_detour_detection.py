@@ -1,7 +1,9 @@
 import unittest
 import datetime
 
+import openrouteservice
 import pandas as pd
+import requests
 from de4l_geodata.geodatasets import de4l
 from de4l_geodata.geodata import route as rt
 from de4l_geodata.geodata import point as pt
@@ -15,41 +17,41 @@ class TestMetric(unittest.TestCase):
 
         # Manually define the timestamps that should be in the test dataset
         timestamps = [
-            pd.Timestamp("2021-02-22T10:31:33.000Z"),
-            pd.Timestamp("2021-02-22T10:31:52.000Z"),
-            pd.Timestamp("2021-02-22T10:32:07.000Z"),
-            pd.Timestamp("2021-02-22T10:32:17.000Z"),
-            pd.Timestamp("2021-02-22T10:32:40.000Z"),
-            pd.Timestamp("2021-02-22T10:32:41.000Z"),
-            pd.Timestamp("2021-02-22T10:32:50.000Z"),
-            pd.Timestamp("2021-02-22T10:33:00.000Z"),
-            pd.Timestamp("2021-02-22T10:33:23.000Z"),
-            pd.Timestamp("2021-02-22T10:33:26.000Z"),
-            pd.Timestamp("2021-02-22T10:33:27.000Z")
+            pd.Timestamp('2021-02-22T10:31:33.000Z'),
+            pd.Timestamp('2021-02-22T10:31:52.000Z'),
+            pd.Timestamp('2021-02-22T10:32:07.000Z'),
+            pd.Timestamp('2021-02-22T10:32:17.000Z'),
+            pd.Timestamp('2021-02-22T10:32:40.000Z'),
+            pd.Timestamp('2021-02-22T10:32:41.000Z'),
+            pd.Timestamp('2021-02-22T10:32:50.000Z'),
+            pd.Timestamp('2021-02-22T10:33:00.000Z'),
+            pd.Timestamp('2021-02-22T10:33:23.000Z'),
+            pd.Timestamp('2021-02-22T10:33:26.000Z'),
+            pd.Timestamp('2021-02-22T10:33:27.000Z')
         ]
 
         # Define desired timedeltas for the iteration
         timedeltas = [
-            pd.Timedelta(value=0, unit="sec"),
-            pd.Timedelta(value=1, unit="sec"),
-            pd.Timedelta(value=2, unit="sec"),
-            pd.Timedelta(value=5, unit="sec"),
-            pd.Timedelta(value=15, unit="sec"),
-            pd.Timedelta(value=30, unit="sec"),
-            pd.Timedelta(value=1, unit="min"),
-            pd.Timedelta(value=2, unit="min"),
-            pd.Timedelta(value=1500, unit="millis"),
+            pd.Timedelta(value=0, unit='sec'),
+            pd.Timedelta(value=1, unit='sec'),
+            pd.Timedelta(value=2, unit='sec'),
+            pd.Timedelta(value=5, unit='sec'),
+            pd.Timedelta(value=15, unit='sec'),
+            pd.Timedelta(value=30, unit='sec'),
+            pd.Timedelta(value=1, unit='min'),
+            pd.Timedelta(value=2, unit='min'),
+            pd.Timedelta(value=1500, unit='millis'),
         ]
 
-        dataset = de4l.De4lSensorDataset.create_from_json("resources/test-dataset.json", route_len=11)
+        dataset = de4l.De4lSensorDataset.create_from_json('resources/test-dataset.json', route_len=11)
 
         # Get a route from the dataset
-        route = dataset[0]["route_with_timestamps"]
+        route = dataset[0]['route_with_timestamps']
 
         # Define different timestamps to test sampling with start timestamp
-        start_timestamp_middle = pd.Timestamp("2021-02-22T10:32:41.000Z")
-        start_timestamp_late = pd.Timestamp("2021-02-22T10:33:27.000Z")
-        start_timestamp_too_late = pd.Timestamp("2021-02-22T10:33:28.000Z")
+        start_timestamp_middle = pd.Timestamp('2021-02-22T10:32:41.000Z')
+        start_timestamp_late = pd.Timestamp('2021-02-22T10:33:27.000Z')
+        start_timestamp_too_late = pd.Timestamp('2021-02-22T10:33:28.000Z')
 
         # Test different parameter setups that contain temporal distance, start timestamp and indices of expected
         # sampled points and validate the sampled points
@@ -84,11 +86,11 @@ class TestMetric(unittest.TestCase):
 
         # Test parameters that should lead to an error
         with self.assertRaises(ValueError):
-            detour_detection.select_samples(route, temporal_distance="1")
+            detour_detection.select_samples(route, temporal_distance='1')
             detour_detection.select_samples(route, temporal_distance=1)
             detour_detection.select_samples(route,
                                             temporal_distance=timedeltas[1],
-                                            start_timestamp="2021-02-22T10:32:41.000Z")
+                                            start_timestamp='2021-02-22T10:32:41.000Z')
             detour_detection.select_samples(route,
                                             temporal_distance=timedeltas[1],
                                             start_timestamp=1613989893.0)
@@ -99,7 +101,7 @@ class TestMetric(unittest.TestCase):
                                             start_timestamp=timestamps[0])
             detour_detection.select_samples(route,
                                             timedeltas[1],
-                                            datetime.datetime.fromtimestamp("2021-02-22T10:32:41.000Z"))
+                                            datetime.datetime.fromtimestamp('2021-02-22T10:32:41.000Z'))
 
             # Test if passing an empty route leads to an error
             detour_detection.select_samples(rt.Route(), temporal_distance=timedeltas[1])
@@ -115,24 +117,79 @@ class TestMetric(unittest.TestCase):
 
     def test_reverse_geocode(self):
 
-        nominatim_url = "localhost:1234"
+        nominatim_url = 'localhost:1234'
 
         to_reverse = [
             pt.Point([0.62235962758, 2.439017920469]),  # Tokyo Tower Tokyo, real coordinates
             pt.Point([3.62235962758, 4.439017920469]),  # Radians values too high, bogus coordinates
-            # The following values are not instances of geodata.point.Point
+            # The following values are not instances of pt.Point
             [0.9166228376, 0.233458504512],
-            ["0.9166228376", "0.233458504512"],
+            ['0.9166228376', '0.233458504512'],
             123,
-            "456"
+            '456'
         ]
 
         reversed_route, failed_requests, wrong_values = detour_detection.reverse_geocode(to_reverse, nominatim_url)
-        # We expect one wrong value and two failed requests
+        # Expect two failed requests and four wrong values
         self.assertEqual([], reversed_route)
         self.assertEqual(2, failed_requests)
         self.assertEqual(4, wrong_values)
 
+    def test_get_directions_for_points(self):
 
-if __name__ == "__main__":
+        start_point = pt.Point([0.9, 0.1])
+        end_point = pt.Point([0.8, 0.2])
+
+        # Raise because of wrong point parameters
+        for wrong_point in [[], [1.0, 1.0], '[1.0, 1.0]']:
+            self.assertRaises(ValueError,
+                              detour_detection.get_directions_for_points,
+                              start=wrong_point,
+                              end=end_point,
+                              openrouteservice_client=openrouteservice.Client(key=""))
+
+        # Raise because of missing openrouteservice client
+        self.assertRaises(ValueError,
+                          detour_detection.get_directions_for_points,
+                          start=start_point,
+                          end=end_point,
+                          openrouteservice_client=None,
+                          openrouteservice_profile='driving-car')
+
+        # Raise because of wrong openrouteservice profile
+        self.assertRaises(ValueError,
+                          detour_detection.get_directions_for_points,
+                          start=start_point,
+                          end=end_point,
+                          openrouteservice_client=openrouteservice.Client(key=""),
+                          openrouteservice_profile='rocket_spaceship')
+
+    def test_get_directions_for_route(self):
+
+        correct_route = rt.Route([pt.Point([0.9, 0.1]), pt.Point([0.8, 0.2])])
+        base_path = 'localhost:8008'
+
+        # Raise because of an invalid route
+        for wrong_route in [[], rt.Route(), rt.Route([pt.Point([0.4, 0.9])])]:
+            self.assertRaises(ValueError,
+                              detour_detection.get_directions_for_route,
+                              route=wrong_route,
+                              openrouteservice_base_path=base_path)
+
+        # Raise because of a wrong openrouteservice profile
+        self.assertRaises(ValueError,
+                          detour_detection.get_directions_for_route,
+                          route=correct_route,
+                          openrouteservice_base_path=base_path,
+                          openrouteservice_profile='rocket_spaceship')
+
+        # Raise in case of a wrong path
+        for wrong_path in ['localhost:9008', 'localhos:8008', 'localhost']:
+            self.assertRaises(requests.exceptions.ConnectionError,
+                              detour_detection.get_directions_for_route,
+                              route=correct_route,
+                              openrouteservice_base_path=wrong_path)
+
+
+if __name__ == '__main__':
     unittest.main()
