@@ -1,13 +1,16 @@
 """This module detects detours to measure the privacy risk inherent to spatio-temporal trajectories containing stops.
 """
+import requests
+from math import degrees
 from urllib3.exceptions import ConnectTimeoutError
-import math
 
 import pandas as pd
 from geodata import route as rt
+from geodata import point as pt
 from geopy.exc import GeocoderUnavailable
 from geopy.geocoders import Nominatim
 from geopy.location import Location
+
 
 def select_samples(route, temporal_distance, start_timestamp=None):
     """
@@ -66,6 +69,7 @@ def select_samples(route, temporal_distance, start_timestamp=None):
 
     return sampled_points
 
+
 def nominatim_reverse(point, nominatim):
     """
     This function calls Nominatim's reverse function to convert a coordinate consisting of longitude and latitude in
@@ -98,6 +102,7 @@ def nominatim_reverse(point, nominatim):
             print("Connection to Nominatim could not be established.")
 
     return reversed_point
+
 
 def reverse_geocode(sampled_points, nominatim_url):
     """
@@ -135,7 +140,7 @@ def reverse_geocode(sampled_points, nominatim_url):
     for point in sampled_points:
         try:
             # Convert to degrees, as Nominatim works with degrees
-            point_deg = [math.degrees(point.x_lon), math.degrees(point.y_lat)]
+            point_deg = [degrees(point.x_lon), degrees(point.y_lat)]
             reverse_geocoded_point = nominatim_reverse(point_deg, nominatim)
             if isinstance(reverse_geocoded_point, Location):
                 reverse_geocoded_points.append(reverse_geocoded_point)
@@ -151,3 +156,74 @@ def reverse_geocode(sampled_points, nominatim_url):
         print(f"Failed to query Nominatim for {wrong_values} points. Check if these are of type geodata.point.Point.")
 
     return reverse_geocoded_points, failed_requests, wrong_values
+
+
+def get_optimal_route(start, end, openrouteservice_full_url):
+    """
+    Use Openrouteservice to get a connecting route between to geographical points.
+
+    Parameters
+    ----------
+    start : geodata.point.Point
+        A geographical point marking the beginning of the route to calculate.
+    end : geodata.point.Point
+        A geographical point marking the end of the route to calculate.
+    openrouteservice_full_url : str
+        A url to a running instance of Openrouteservice.
+
+    Returns
+    -------
+    route : Geojson
+        A route between start and end in Geojson format.
+
+    """
+    if not isinstance(start, pt.Point) or not isinstance(end, pt.Point):
+        raise ValueError(
+            "Failed to get a optimal route for a point. Make sure the route contains values of type geodata.point.Point"
+            "."
+        )
+
+    start = [degrees(start[0]), degrees(start[1])]
+    end = [degrees(end[0]), degrees(end[1])]
+    payload = {'start': str(start)[1:-1], 'end': str(end)[1:-1]}
+    r = requests.get(openrouteservice_full_url, params=payload)
+
+    return r.text
+
+
+def get_optimal_routes(sampled_points, openrouteservice_base_address):
+    """
+    Calculate the optimal connections between consecutive pairs of geographical points. This is done by using
+    Openrouteservice and its directions functionality.
+
+    Parameters
+    ----------
+    sampled_points : geodata.route.Route
+        A route containing geographical points sampled using a given temporal distance.
+    openrouteservice_base_address : str
+        The port that Openrouteservice listens on.
+
+    Returns
+    -------
+    optimal_route : list
+        A list containing the optimal routes connecting every consecutive pair of points from the input in Geojson
+        format.
+
+    """
+    if not isinstance(sampled_points, rt.Route) or len(sampled_points) == 0:
+        raise ValueError(
+            "Failed to get optimal routes. Make sure to pass a non-empty route of type geodata.route.Route."
+        )
+
+    url_protocol = 'http://'
+    url_path = '/ors/v2/directions/driving-car'
+    full_url = url_protocol + openrouteservice_base_address + url_path
+
+    optimal_routes = []
+    for idx in range(1, len(sampled_points)):
+        start = sampled_points[idx - 1]
+        end = sampled_points[idx]
+        route = get_optimal_route(start, end, openrouteservice_full_url=full_url)
+        optimal_routes.append(route)
+
+    return optimal_routes

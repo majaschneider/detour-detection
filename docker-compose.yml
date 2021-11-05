@@ -2,42 +2,41 @@ version: "3"
 
 services:
     # Start a Nominatim instance that uses the latest version of Open Street Maps for Germany
-    nominatim:
-        container_name: nominatim-germany
-        image: mediagis/nominatim:3.7
-        restart: always
-        ports:
-            - "8080:8080"
-        environment:
-            # See https://github.com/mediagis/nominatim-docker/tree/master/3.7#configuration for more options
-            PBF_URL: https://download.geofabrik.de/europe/germany-latest.osm.pbf
-            # For updates:
-            REPLICATION_URL: https://download.geofabrik.de/europe/germany-updates/
-            #volumes:
-                #- nominatim-data:/var/lib/postgresql/12/main
-        shm_size: 3gb
+#    nominatim:
+#        container_name: nominatim-germany
+#        image: mediagis/nominatim:3.7
+#        restart: always
+#        ports:
+#            - "8080:8080"
+#        environment:
+#            # See https://github.com/mediagis/nominatim-docker/tree/master/3.7#configuration for more options
+#            PBF_URL: https://download.geofabrik.de/europe/germany-latest.osm.pbf
+#            # For updates:
+#            REPLICATION_URL: https://download.geofabrik.de/europe/germany-updates/
+#            #volumes:
+#                #- nominatim-data:/var/lib/postgresql/12/main
+#        shm_size: 3gb
     ors-app:
         container_name: ors-app
         ports:
-            - 8080:8080
+        - 8008:8080
         image: openrouteservice/openrouteservice:latest
-        #    build:
-        #      context: ../
-        #      args:
-        #        ORS_CONFIG: ./openrouteservice/src/main/resources/ors-config-sample.json
-        #        OSM_FILE: ./openrouteservice/src/main/files/heidelberg.osm.gz
+        build:
+          context: ../
+          args:
+            ORS_CONFIG: ./conf/ors-config.json
+            OSM_FILE: ./germany-latest.osm.pbf
         user: "${ORS_UID:-0}:${ORS_GID:-0}"
         volumes:
-            - ./graphs:/ors-core/data/graphs
-            - ./elevation_cache:/ors-core/data/elevation_cache
-            - ./logs/ors:/var/log/ors
-            - ./logs/tomcat:/usr/local/tomcat/logs
-            - ./conf:/ors-conf
-            #- ./germany-latest.osm.pbf
-            - /home/lukasgehrke/Projects/DE4L/de4l-detour-privacy-metric/germany-latest.osm.pbf
+        - ./graphs:/ors-core/data/graphs
+        - ./elevation_cache:/ors-core/data/elevation_cache
+        - ./logs/ors:/var/log/ors
+        - ./logs/tomcat:/usr/local/tomcat/logs
+        - ./conf:/ors-conf
+        - ./germany-latest.osm.pbf:/ors-core/data/osm_file.pbf
         environment:
-            - BUILD_GRAPHS=False  # Forces the container to rebuild the graphs, e.g. when PBF is changed
-            - "JAVA_OPTS=-Djava.awt.headless=true -server -XX:TargetSurvivorRatio=75 -XX:SurvivorRatio=64 -XX:MaxTenuringThreshold=3 -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:ParallelGCThreads=4 -Xms1g -Xmx2g"
-            - "CATALINA_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9001 -Dcom.sun.management.jmxremote.rmi.port=9001 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
+        - BUILD_GRAPHS=True  # Forces the container to rebuild the graphs, e.g. when PBF is changed
+        - "JAVA_OPTS=-Djava.awt.headless=true -server -XX:TargetSurvivorRatio=75 -XX:SurvivorRatio=64 -XX:MaxTenuringThreshold=3 -XX:+UseG1GC -XX:+ScavengeBeforeFullGC -XX:ParallelGCThreads=4 -Xms4g -Xmx8g"
+        - "CATALINA_OPTS=-Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9001 -Dcom.sun.management.jmxremote.rmi.port=9001 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost"
 volumes:
   nominatim-data:

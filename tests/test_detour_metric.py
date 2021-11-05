@@ -120,6 +120,19 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(failed_requests, 2)
         self.assertEqual(wrong_values, 1)
 
+    def test_get_optimal_route(self):
+
+        dataset = de4l.De4lSensorDataset.create_from_json("../resources/fox-dump-3-tail.json", route_len=1000)
+        # Get a route from the dataset
+        route = dataset[5]["route_with_timestamps"]
+        temporal_distance = pd.Timedelta(value=600, unit="sec")
+
+        sampled_points = detour_metric.select_samples(route, temporal_distance)
+
+        routes = detour_metric.get_optimal_routes(sampled_points, "localhost:8008")
+
+        print("Done")
+
 
 if __name__ == "__main__":
     unittest.main()
