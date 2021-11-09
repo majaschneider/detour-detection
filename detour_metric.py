@@ -5,6 +5,7 @@ from math import degrees
 from urllib3.exceptions import ConnectTimeoutError
 
 import pandas as pd
+import openrouteservice
 from geodata import route as rt
 from geodata import point as pt
 from geopy.exc import GeocoderUnavailable
@@ -150,7 +151,7 @@ def reverse_geocode(sampled_points, nominatim_url):
             wrong_values += 1
 
     if failed_requests > 0:
-        print(f"Failed requesting to reverse geocode {failed_requests} points. Check if you are able to connect to"
+        print(f"Failed requesting to reverse geocode {failed_requests} points. Check if you are able to connect to "
               f"Nominatim, that your instance has the correct map data and that your points' values are valid.")
     if wrong_values > 0:
         print(f"Failed to query Nominatim for {wrong_values} points. Check if these are of type geodata.point.Point.")
@@ -158,9 +159,9 @@ def reverse_geocode(sampled_points, nominatim_url):
     return reverse_geocoded_points, failed_requests, wrong_values
 
 
-def get_optimal_route(start, end, openrouteservice_full_url):
+def get_optimal_route(start, end, ors_client):
     """
-    Use Openrouteservice to get a connecting route between to geographical points.
+    Use Openrouteservice to get a connecting route between two geographical points.
 
     Parameters
     ----------
@@ -168,8 +169,8 @@ def get_optimal_route(start, end, openrouteservice_full_url):
         A geographical point marking the beginning of the route to calculate.
     end : geodata.point.Point
         A geographical point marking the end of the route to calculate.
-    openrouteservice_full_url : str
-        A url to a running instance of Openrouteservice.
+    ors_client : openrouteservices.client.Client
+        A running instance of the Openrouteservice client.
 
     Returns
     -------
@@ -183,15 +184,25 @@ def get_optimal_route(start, end, openrouteservice_full_url):
             "."
         )
 
-    start = [degrees(start[0]), degrees(start[1])]
-    end = [degrees(end[0]), degrees(end[1])]
-    payload = {'start': str(start)[1:-1], 'end': str(end)[1:-1]}
-    r = requests.get(openrouteservice_full_url, params=payload)
+    coords = ((degrees(start[0]), degrees(start[1])), (degrees(end[0]), degrees(end[1])))
 
-    return r.text
+    try:
+        ors_response = ors_client.directions(coords)
+        routes = ors_response["routes"]
+        if len(routes) == 1:
+            time_optimal_route_package = routes[0]
+        else:
+            times = [r["summary"]["duration"] for r in routes]
+            min_time = min(times)
+            time_optimal_route_package = [r for r in routes if r["summary"]["duration"] == min_time][0]
+        time_optimal_route = time_optimal_route_package["segments"][0]
+    except openrouteservice.exceptions.ApiError:
+        time_optimal_route = {}
+
+    return time_optimal_route
 
 
-def get_optimal_routes(sampled_points, openrouteservice_base_address):
+def get_optimal_routes(sampled_points, openrouteservice_base_path):
     """
     Calculate the optimal connections between consecutive pairs of geographical points. This is done by using
     Openrouteservice and its directions functionality.
@@ -200,8 +211,8 @@ def get_optimal_routes(sampled_points, openrouteservice_base_address):
     ----------
     sampled_points : geodata.route.Route
         A route containing geographical points sampled using a given temporal distance.
-    openrouteservice_base_address : str
-        The port that Openrouteservice listens on.
+    openrouteservice_base_path : str
+        The base address of the available instance of Openrouteservice. Its structure should be like 'localhost:8001'.
 
     Returns
     -------
@@ -215,15 +226,14 @@ def get_optimal_routes(sampled_points, openrouteservice_base_address):
             "Failed to get optimal routes. Make sure to pass a non-empty route of type geodata.route.Route."
         )
 
-    url_protocol = 'http://'
-    url_path = '/ors/v2/directions/driving-car'
-    full_url = url_protocol + openrouteservice_base_address + url_path
+    ors_url = "http://" + openrouteservice_base_path + "/ors"
+    client = openrouteservice.Client(base_url=ors_url)
 
     optimal_routes = []
     for idx in range(1, len(sampled_points)):
         start = sampled_points[idx - 1]
         end = sampled_points[idx]
-        route = get_optimal_route(start, end, openrouteservice_full_url=full_url)
+        route = get_optimal_route(start, end, ors_client=client)
         optimal_routes.append(route)
 
     return optimal_routes

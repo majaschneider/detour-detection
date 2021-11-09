@@ -1,3 +1,4 @@
+import requests
 import unittest
 
 import datetime
@@ -106,6 +107,7 @@ class TestMetric(unittest.TestCase):
             )
 
     def test_reverse_geocode(self):
+
         nominatim_url = "localhost:1234"
 
         to_reverse = [
@@ -120,7 +122,10 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(failed_requests, 2)
         self.assertEqual(wrong_values, 1)
 
-    def test_get_optimal_route(self):
+    def test_get_optimal_routes(self):
+
+        # TODO: Remove from here -->
+        openrouteservice_url = "localhost:8008"
 
         dataset = de4l.De4lSensorDataset.create_from_json("../resources/fox-dump-3-tail.json", route_len=1000)
         # Get a route from the dataset
@@ -129,9 +134,13 @@ class TestMetric(unittest.TestCase):
 
         sampled_points = detour_metric.select_samples(route, temporal_distance)
 
-        routes = detour_metric.get_optimal_routes(sampled_points, "localhost:8008")
+        routes = detour_metric.get_optimal_routes(sampled_points, openrouteservice_url)
+        # TODO: Remove until here <--
 
-        print("Done")
+        with self.assertRaises(requests.exceptions.ConnectionError):
+            _ = detour_metric.get_optimal_routes(sampled_points, openrouteservice_base_path="localhost:9008")
+            _ = detour_metric.get_optimal_routes(sampled_points, openrouteservice_base_path="localhos:8008")
+            _ = detour_metric.get_optimal_routes(sampled_points, openrouteservice_base_path="localhost")
 
 
 if __name__ == "__main__":
