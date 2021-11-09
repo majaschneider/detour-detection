@@ -1,0 +1,11 @@
+{"sequenceNumber":3282246,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106591,"lat":50.8776263},"value":10,"timestamp":"2021-02-22T10:31:33.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282265,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106591,"lat":50.8776266},"value":14,"timestamp":"2021-02-22T10:31:52.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282280,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106593,"lat":50.8776267},"value":12,"timestamp":"2021-02-22T10:32:07.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282290,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106597,"lat":50.8776268},"value":11,"timestamp":"2021-02-22T10:32:17.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282313,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106611,"lat":50.8776269},"value":12,"timestamp":"2021-02-22T10:32:40.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282314,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106611,"lat":50.8776269},"value":13,"timestamp":"2021-02-22T10:32:41.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282323,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106618,"lat":50.877627},"value":13,"timestamp":"2021-02-22T10:32:50.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282333,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6106625,"lat":50.8776271},"value":13,"timestamp":"2021-02-22T10:33:00.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282336,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6107108,"lat":50.8775763},"value":10,"timestamp":"2021-02-22T10:33:23.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282339,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6107108,"lat":50.8775763},"value":12,"timestamp":"2021-02-22T10:33:26.000Z","username":"fox-courier-fahrer"}
+{"sequenceNumber":3282340,"sensorType":"PM2_5","airBeamId":"00:11:E4:00:07:93","location":{"lon":11.6107108,"lat":50.8775763},"value":12,"timestamp":"2021-02-22T10:33:27.000Z","username":"fox-courier-fahrer"}
