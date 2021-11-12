@@ -237,3 +237,142 @@ def get_optimal_routes(sampled_points, openrouteservice_base_path):
         optimal_routes.append(route)
 
     return optimal_routes
+
+
+def calculate_difference_by_duration(sampled_points, openrouteservice_base_path):
+    """
+    Calculate the difference in duration between the estimated time of directions given by Openrouteservice and the real
+    time that passed between two consecutive points.
+
+    Parameters
+    ----------
+    sampled_points : geodata.route.Route
+        A route consisting of points with timestamps, which a have been sampled given a certain temporal distance as
+        sampling rate.
+    openrouteservice_base_path : str
+        The base address of the available instance of Openrouteservice. Its structure should be like 'localhost:8001'.
+
+    Returns
+    -------
+    differences : list
+        A list where each entry is a float representing the difference between actual time between two consecutive
+        points and time as of a route between these two points.
+
+    """
+    differences = []
+
+    routes = get_optimal_routes(sampled_points, openrouteservice_base_path)
+
+    for idx in range(1, len(sampled_points)):
+        start_point = sampled_points[idx-1]
+        end_point = sampled_points[idx]
+        route = routes[idx-1]
+
+        # get timestamp difference between start and end
+        duration_points = (end_point.timestamp - start_point.timestamp).seconds
+        # get duration of optimal route
+        duration_route = route["duration"]
+        # calculate the difference and add to result
+        differences.append(duration_points - duration_route)
+
+    return differences
+
+
+def get_samples_between(sampled_points, start, end, temporal_distance, k):
+    """
+    Get samples between start and end and avoid last match if it would sting end.
+    Idea: trim the list of all timestamps that are less or equal than end-temporal_distance earlier than end timestamp.
+    Add the last point again.
+    Furthermore check whether enough samples are retrieved:
+
+    Parameters
+    ----------
+    sampled_points : geodata.route.Route
+        A route consisting of points with timestamps, which a have been sampled given a certain temporal distance as
+        sampling rate.
+    start : geodata.point.PointT
+        The point that should be the first point in the returned route.
+    end : geodata.point.PointT
+        The point that should be the last point in the returned route.
+    temporal_distance : pandas.timedelta.Timedelta
+        The initial time difference between two consecutive points that is given in the parameter sampled_points. It is
+         used to derive the smaller temporal difference.
+    k : int
+        The divisor that is used to determine the second, smaller temporal distance for sub sampling. It furthermore
+        indicates the maximum number of samples that can be retrieved during sub sampling, k + 1.
+
+    Returns
+    -------
+    samples_between : geodata.route.Route
+        A route consisting of points between starting and ending which are at least temporal distance apart. Starting
+        and ending point are included.
+
+    """
+    temporal_distance = temporal_distance / k
+    max_new_samples = k + 1
+
+    samples_reduced = rt.Route([p for p in sampled_points if p.timestamp < (end.timestamp - temporal_distance)])
+    samples_between = select_samples(samples_reduced, temporal_distance, start_timestamp=start.timestamp)
+    samples_between.append(end)
+
+    if len(samples_between) < (max_new_samples / 2):
+        return rt.Route([])
+    else:
+        return samples_between
+
+
+def calculate_difference_by_distance_and_duration(sampled_points, openrouteservice_base_path, temporal_distance, k):
+    """
+    This function calculates the differences in duration and distance between pairs of consecutive geographical points.
+    Therefore, the function samples points a second time, with a second, smaller temporal distance. This is calculated
+    using k.
+
+    Parameters
+    ----------
+    sampled_points : geodata.route.Route
+        A route consisting of points with timestamps, which a have been sampled given a certain temporal distance as
+        sampling rate.
+    openrouteservice_base_path : str
+        The base address of the available instance of Openrouteservice. Its structure should be like 'localhost:8001'.
+    temporal_distance : pandas.Timedelta
+        The temporal distance in seconds between sampled points.
+    k : int
+        The divisor that is used to determine the second, smaller temporal distance for sub sampling.
+
+    Returns
+    -------
+    differences : list
+        A list of dicts containing the difference in distance and in duration between optimal routes connecting two
+        consecutive points and routes connecting a set of sub sampled points between these two points.
+
+    """
+    if not isinstance(k, int) or k < 3:
+        raise ValueError("Wrong value for parameter k for sub sampling value. Make sure it is an integer larger than 2.")
+
+    differences = []
+
+    samples_initial_rate = select_samples(sampled_points, temporal_distance)
+
+    optimal_routes_initial_rate = get_optimal_routes(samples_initial_rate, openrouteservice_base_path)
+
+    for idx in range(1, len(samples_initial_rate)):
+        start_point = samples_initial_rate[idx-1]
+        end_point = samples_initial_rate[idx]
+        optimal_route_distance = optimal_routes_initial_rate[idx-1]["distance"]
+        optimal_route_duration = optimal_routes_initial_rate[idx-1]["duration"]
+
+        samples_smaller_rate = get_samples_between(sampled_points=sampled_points,
+                                                   start=start_point,
+                                                   end=end_point,
+                                                   temporal_distance=temporal_distance,
+                                                   k=k)
+        optimal_routes_smaller_rate = get_optimal_routes(samples_smaller_rate, openrouteservice_base_path)
+        summed_distance = sum(directions["distance"] for directions in optimal_routes_smaller_rate)
+        summed_duration = sum(directions["duration"] for directions in optimal_routes_smaller_rate)
+
+        delta_distance = summed_distance - optimal_route_distance
+        delta_duration = summed_duration - optimal_route_duration
+
+        differences.append({"distance_difference": delta_distance, "duration_difference": delta_duration})
+
+    return differences

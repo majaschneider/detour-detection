@@ -142,6 +142,40 @@ class TestMetric(unittest.TestCase):
             _ = detour_metric.get_optimal_routes(sampled_points, openrouteservice_base_path="localhos:8008")
             _ = detour_metric.get_optimal_routes(sampled_points, openrouteservice_base_path="localhost")
 
+    def test_calculate_difference_by_duration(self):
+
+        openrouteservice_url = "localhost:8008"
+
+        dataset = de4l.De4lSensorDataset.create_from_json("../resources/fox-dump-3-tail.json", route_len=1000)
+        # Get a route from the dataset
+        route = dataset[5]["route_with_timestamps"]
+        temporal_distance = pd.Timedelta(value=600, unit="sec")
+
+        sampled_points = detour_metric.select_samples(route, temporal_distance)
+        routes = detour_metric.get_optimal_routes(sampled_points, openrouteservice_url)
+
+        temporal_distances = detour_metric.calculate_difference_by_duration(sampled_points, routes)
+
+        print("Done.")
+
+    def test_calculate_difference_by_distance_and_duration(self):
+
+        openrouteservice_url = "localhost:8008"
+
+        dataset = de4l.De4lSensorDataset.create_from_json("../resources/fox-dump-3-tail.json", route_len=1000)
+        # Get a route from the dataset
+        route = dataset[5]["route_with_timestamps"]
+        temporal_distance = pd.Timedelta(value=600, unit="sec")
+
+        temporal_distances = detour_metric.calculate_difference_by_distance_and_duration(
+            route,
+            openrouteservice_url,
+            temporal_distance,
+            k=10
+        )
+
+        print("Done.")
+
 
 if __name__ == "__main__":
     unittest.main()
