@@ -1,6 +1,6 @@
 import unittest
-
 import datetime
+
 import pandas as pd
 from geodatasets import de4l
 from geodata import route as rt
@@ -111,6 +111,26 @@ class TestMetric(unittest.TestCase):
             route_without_timestamps.append(pt.Point([51.3396955, 12.3730747]))
             route_without_timestamps.append(pt.Point([51.0504088, 13.7372621]))
             detour_metric.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
+
+    def test_reverse_geocode(self):
+        
+        nominatim_url = "localhost:1234"
+
+        to_reverse = [
+            pt.Point([0.62235962758, 2.439017920469]),  # Tokyo Tower Tokyo, real coordinates
+            pt.Point([3.62235962758, 4.439017920469]),  # Radians values too high, bogus coordinates
+            # The following values are not instances of geodata.point.Point
+            [0.9166228376, 0.233458504512],
+            ["0.9166228376", "0.233458504512"],
+            123,
+            "456"
+        ]
+
+        reversed_route, failed_requests, wrong_values = detour_metric.reverse_geocode(to_reverse, nominatim_url)
+        # We expect one wrong value and two failed requests
+        self.assertEqual([], reversed_route)
+        self.assertEqual(2, failed_requests)
+        self.assertEqual(4, wrong_values)
 
 
 if __name__ == "__main__":
