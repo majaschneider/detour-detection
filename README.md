@@ -2,7 +2,7 @@
 
 <h1>Privacy metric algorithm based on detours in trajetory data.</h1>
 <p>This algorithm calculates the difference from the ideal path between
-selected geographical points. The higher the difference, the higher privacy risk.</p>
+selected geographical points. The higher the difference, the higher the privacy risk.</p>
 
 ## Setup
 
@@ -18,4 +18,4 @@ To start the container, run
 docker-compose up
 ```
 
-The first start might take a while, because all files for the Nominatim service have to be generated. All following launches should be quicker, because the container persists its data in `./nominatim-data/` and will only update data on.
+The first start might take a while, because all files for the Nominatim service have to be generated. All following launches should be quicker, because the container persists its data in `./nominatim-data/` and will only update if new geodata is available.
