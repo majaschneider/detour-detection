@@ -110,7 +110,7 @@ def reverse_geocode(sampled_points, nominatim_url):
     for point in sampled_points:
         # Check whether a point in the route has the correct data type
         if isinstance(point, pt.Point):
-            point_deg = [degrees(point.x_lon), degrees(point.y_lat)]
+            point_deg = [degrees(point.y_lat), degrees(point.x_lon)]
             reverse_geocoded_point = nominatim_reverse(point_deg, nominatim)
             # Check whether a request to Nominatim succeeded. A request might fail due to connection issues or because
             # there are no results for a given point
