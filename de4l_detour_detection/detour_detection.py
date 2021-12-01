@@ -15,21 +15,22 @@ from geopy.location import Location
 
 def select_samples(route, temporal_distance, start_timestamp=None):
     """
-    Samples points from a given route with a certain temporal distance. Sampling starts at the first route point or, if
-    provided, at start_timestamp. The route must contain timestamps. The function assumes that the temporal distances
-    between points in the route are equal. Dealing with irregular timestamps will be addressed later.
+    Selects points of a given route so that a certain temporal distance is kept. Sampling starts at the first route
+    point or, if provided, at start_timestamp. The route points must contain timestamps. The function assumes that the
+    temporal distances between points in the route are equal. Dealing with irregular timestamps will be addressed later.
 
     Parameter
     ---------
     route : rt.Route
         A route object containing trajectory data represented as de4l_geodata.geodata.point_t.PointT. If the parameter
-        route is empty the returned route is empty as well. The points in the route are assumed to be sorted according
-        to timestamp. In other words: the oldest timestamp is at the first index.
+        route is empty the returned route is empty as well. The points in the route are assumed to be sorted ascending
+        by their timestamp.
     temporal_distance : pd.Timedelta
         The temporal distance in seconds between sampled points.
     start_timestamp : pd.Timestamp
         An optional timestamp that marks the starting point for selection of samples. If None, sampling starts at the
         first route point.
+
     Returns
     -------
     sampled_points : rt.Route
