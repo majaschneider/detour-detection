@@ -1,3 +1,4 @@
+import math
 import unittest
 import datetime
 
@@ -114,6 +115,64 @@ class TestMetric(unittest.TestCase):
             route_without_timestamps.append(pt.Point([51.3396955, 12.3730747]))
             route_without_timestamps.append(pt.Point([51.0504088, 13.7372621]))
             detour_detection.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
+
+    def test_sample_from_shape(self):
+        # design the example shape
+        # start at coordinate origin
+        point1 = pt.Point([0, 0])
+        angle1 = math.radians(0)
+        # move along x-axis for 100 meters
+        point2 = pt.Point(point1.copy()).add_vector(100, angle1)
+        angle2 = math.radians(45)
+        # move in 45 degrees angle north east for 50 meters
+        point3 = pt.Point(point2.copy()).add_vector(50, angle2)
+        example_shape = rt.Route([point1, point2, point3])
+
+        # When sampling every 20 meters, we expect to sample six points along the x-axis with a distance between each
+        # of 20 meters ([0, 0] up to [0, 100 meters]) and then two points in a 45 degrees angle north east, also with a
+        # distance of 20 meters between each point. In a rectangular triangle trigonometric equations can be used to
+        # determine these last two points:
+        #
+        #      C
+        #     /|
+        #    / |
+        #   /  |
+        #  /   |
+        # A----B
+        # angle at A is 45°
+        # angle at B is 90°
+        #
+        # calculate y-elevation:
+        # sin(45°) = opposite leg/hypotenuse = |BC|/|AC|
+        # |AC| = 20 -> |BC| = sin(45°) * 20
+        #
+        # calculate x-elevation:
+        # cos(45°) = opposite leg/hypotenuse = |AB|/|AC|
+        # |AC| = 20 -> |AB| = cos(45°) * 20
+        sampling_distance = 20
+        meters_factor = 0.001  # all points are located in a cartesian plane of which each axis is measured in
+        # kilometers
+        expected_sampled_points = rt.Route(
+            [pt.Point([0, 0], 'cartesian'),
+             pt.Point([0, 20 * meters_factor], 'cartesian'),
+             pt.Point([0, 40 * meters_factor], 'cartesian'),
+             pt.Point([0, 60 * meters_factor], 'cartesian'),
+             pt.Point([0, 80 * meters_factor], 'cartesian'),
+             pt.Point([0, 100 * meters_factor], 'cartesian'),
+             pt.Point([math.cos(angle2) * 20 * meters_factor,
+                       100 * meters_factor + math.sin(angle2) * 20 * meters_factor], 'cartesian'),
+             pt.Point([math.cos(angle2) * 40 * meters_factor,
+                       100 * meters_factor + math.sin(angle2) * 40 * meters_factor], 'cartesian')])
+
+        sampled_points = detour_detection.sample_from_shape(example_shape, sampling_distance)
+        len_sampled_points = len(sampled_points)
+
+        self.assertEqual(len(expected_sampled_points), len_sampled_points)
+
+        for idx in range(len_sampled_points):
+            sampled_points[idx].to_cartesian()
+            self.assertAlmostEqual(expected_sampled_points[idx].x_lon, sampled_points[idx].x_lon, 10)
+            self.assertAlmostEqual(expected_sampled_points[idx].y_lat, sampled_points[idx].y_lat, 10)
 
     def test_reverse_geocode(self):
 
