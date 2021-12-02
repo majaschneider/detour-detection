@@ -6,7 +6,7 @@ from geodatasets import de4l
 from geodata import route as rt
 from geodata import point as pt
 
-import detour_metric
+from de4l_detour_privacy_metric import detour_metric
 
 
 class TestMetric(unittest.TestCase):
@@ -14,17 +14,18 @@ class TestMetric(unittest.TestCase):
     def test_select_samples(self):
 
         # Manually define the timestamps that should be in the test dataset
-        timestamps = [pd.Timestamp("2021-02-22T10:31:33.000Z"),
-                      pd.Timestamp("2021-02-22T10:31:52.000Z"),
-                    pd.Timestamp("2021-02-22T10:32:07.000Z"),
-                    pd.Timestamp("2021-02-22T10:32:17.000Z"),
-                    pd.Timestamp("2021-02-22T10:32:40.000Z"),
-                    pd.Timestamp("2021-02-22T10:32:41.000Z"),
-                    pd.Timestamp("2021-02-22T10:32:50.000Z"),
-                    pd.Timestamp("2021-02-22T10:33:00.000Z"),
-                    pd.Timestamp("2021-02-22T10:33:23.000Z"),
-                    pd.Timestamp("2021-02-22T10:33:26.000Z"),
-                    pd.Timestamp("2021-02-22T10:33:27.000Z")
+        timestamps = [
+            pd.Timestamp("2021-02-22T10:31:33.000Z"),
+            pd.Timestamp("2021-02-22T10:31:52.000Z"),
+            pd.Timestamp("2021-02-22T10:32:07.000Z"),
+            pd.Timestamp("2021-02-22T10:32:17.000Z"),
+            pd.Timestamp("2021-02-22T10:32:40.000Z"),
+            pd.Timestamp("2021-02-22T10:32:41.000Z"),
+            pd.Timestamp("2021-02-22T10:32:50.000Z"),
+            pd.Timestamp("2021-02-22T10:33:00.000Z"),
+            pd.Timestamp("2021-02-22T10:33:23.000Z"),
+            pd.Timestamp("2021-02-22T10:33:26.000Z"),
+            pd.Timestamp("2021-02-22T10:33:27.000Z")
         ]
 
         # Define desired timedeltas for the iteration
@@ -113,7 +114,7 @@ class TestMetric(unittest.TestCase):
             detour_metric.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
 
     def test_reverse_geocode(self):
-        
+
         nominatim_url = "localhost:1234"
 
         to_reverse = [

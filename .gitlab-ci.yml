@@ -40,10 +40,8 @@ before_script:
   - python --version # Print Python version for debugging
   - pip install --upgrade pip
   - pip --version # Print pip version for debugging
-  - pip install virtualenv
-  - virtualenv venv
-  - source venv/bin/activate
-  - pip install -r requirements.txt
+  - pip install poetry
+  - poetry install --extras torch
 
 stages:
   - code analysis
@@ -54,7 +52,7 @@ flake8:
   script:
     - pip install flake8
       # Check for max line length of 120.
-    - flake8 --max-line-length=120 *.py
+    - flake8 --max-line-length=120 */*.py
 
 pylint:
   stage: code analysis
@@ -62,12 +60,10 @@ pylint:
   script:
     - pip install pylint
       # Run pylint with line length warnings (C0301) disabled.
-    - pylint -d C0301 *.py
+    - pylint -d C0301 */*.py
 
 unittest:
   stage: test
   script:
     - echo "Running tests"
-    - export PYTHONPATH="$PYTHONPATH:."
-    - python -m unittest discover -v
-
+    - poetry run python -m unittest discover -v
