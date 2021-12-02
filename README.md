@@ -1,6 +1,6 @@
-# de4l-detour-privacy-metric
+# de4l-detour-detection
 
-<h1>Privacy metric algorithm based on detours in trajetory data.</h1>
+<h1>Estimate exposure of private information in trajectory data based on detours.</h1>
 <p>This algorithm calculates the difference from the ideal path between
 selected geographical points. The higher the difference, the higher the privacy risk.</p>
 
@@ -8,7 +8,7 @@ selected geographical points. The higher the difference, the higher the privacy 
 
 ### Nominatim
 
-The metric needs [Nominatim](https://github.com/osm-search/Nominatim) to reverse geocode coordinates.
+The package needs [Nominatim](https://github.com/osm-search/Nominatim) to reverse geocode coordinates.
 
 Nominatim is set up to start as a docker container listening at port `8080`. The Nominatim service uses data about Germany.
 

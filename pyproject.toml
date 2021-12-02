@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "de4l-detour-privacy-metric"
+name = "de4l-detour-detection"
 version = "0.0.1"
-description = "A package for estimating the exposure of private information in trajectory data."
-repository = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-privacy-metric"
+description = "A package for estimating the exposure of private information in trajectory data by detecting detours."
+repository = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection"
 authors = ["Maja Schneider","Lukas Gehrke"]
 license = "MIT"
 readme = "README.md"
@@ -24,8 +24,8 @@ de4l_geodata = { git = "git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/p
 torch = ["torch"]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-privacy-metric/-/issues"
-"Source" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-privacy-metric"
+"Bug Tracker" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection/-/issues"
+"Source" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

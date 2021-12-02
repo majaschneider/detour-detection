@@ -6,7 +6,7 @@ from geodatasets import de4l
 from geodata import route as rt
 from geodata import point as pt
 
-from de4l_detour_privacy_metric import detour_metric
+from de4l_detour_detection import detour_detection
 
 
 class TestMetric(unittest.TestCase):
@@ -77,41 +77,41 @@ class TestMetric(unittest.TestCase):
             # With start timestamp later than the timestamps to sample
             (timedeltas[3], start_timestamp_too_late, []),
         ]:
-            sampled_points = detour_metric.select_samples(route, temporal_distance, start_timestamp)
+            sampled_points = detour_detection.select_samples(route, temporal_distance, start_timestamp)
             expected_timestamps = [timestamps[idx] for idx in expected_indices]
             sampled_timestamps = [point.timestamp for point in sampled_points]
             self.assertEqual(expected_timestamps, sampled_timestamps)
 
         # Test parameters that should lead to an error
         with self.assertRaises(ValueError):
-            detour_metric.select_samples(route, temporal_distance="1")
-            detour_metric.select_samples(route, temporal_distance=1)
-            detour_metric.select_samples(route,
-                                         temporal_distance=timedeltas[1],
-                                         start_timestamp="2021-02-22T10:32:41.000Z")
-            detour_metric.select_samples(route,
-                                         temporal_distance=timedeltas[1],
-                                         start_timestamp=1613989893.0)
+            detour_detection.select_samples(route, temporal_distance="1")
+            detour_detection.select_samples(route, temporal_distance=1)
+            detour_detection.select_samples(route,
+                                            temporal_distance=timedeltas[1],
+                                            start_timestamp="2021-02-22T10:32:41.000Z")
+            detour_detection.select_samples(route,
+                                            temporal_distance=timedeltas[1],
+                                            start_timestamp=1613989893.0)
 
             # Disallow timestamps or timedeltas of the datetime module
-            detour_metric.select_samples(route,
-                                         temporal_distance=datetime.timedelta(seconds=5),
-                                         start_timestamp=timestamps[0])
-            detour_metric.select_samples(route,
-                                         timedeltas[1],
-                                         datetime.datetime.fromtimestamp("2021-02-22T10:32:41.000Z"))
+            detour_detection.select_samples(route,
+                                            temporal_distance=datetime.timedelta(seconds=5),
+                                            start_timestamp=timestamps[0])
+            detour_detection.select_samples(route,
+                                            timedeltas[1],
+                                            datetime.datetime.fromtimestamp("2021-02-22T10:32:41.000Z"))
 
             # Test if passing an empty route leads to an error
-            detour_metric.select_samples(rt.Route(), temporal_distance=timedeltas[1])
+            detour_detection.select_samples(rt.Route(), temporal_distance=timedeltas[1])
 
             # Test if passing a wrong type for route leads to an error
-            detour_metric.select_samples([[1, 1]], temporal_distance=timedeltas[1])
+            detour_detection.select_samples([[1, 1]], temporal_distance=timedeltas[1])
 
             # Test if passing a route containing points without timestamps leads to an error
             route_without_timestamps = rt.Route()
             route_without_timestamps.append(pt.Point([51.3396955, 12.3730747]))
             route_without_timestamps.append(pt.Point([51.0504088, 13.7372621]))
-            detour_metric.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
+            detour_detection.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
 
     def test_reverse_geocode(self):
 
@@ -127,7 +127,7 @@ class TestMetric(unittest.TestCase):
             "456"
         ]
 
-        reversed_route, failed_requests, wrong_values = detour_metric.reverse_geocode(to_reverse, nominatim_url)
+        reversed_route, failed_requests, wrong_values = detour_detection.reverse_geocode(to_reverse, nominatim_url)
         # We expect one wrong value and two failed requests
         self.assertEqual([], reversed_route)
         self.assertEqual(2, failed_requests)
