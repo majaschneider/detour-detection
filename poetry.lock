@@ -1,17 +1,25 @@
 [[package]]
 name = "de4l-geodata"
-version = "0.0.4"
+version = "0.0.6"
 description = "A package for working with geolocations"
 category = "main"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.7.1,<3.11"
 develop = false
+
+[package.dependencies]
+haversine = "^2.5.1"
+numpy = "^1.21.2"
+pandas = "^1.3.4"
+
+[package.extras]
+torch = ["torch (>=1.9.0,<1.10.0)"]
 
 [package.source]
 type = "git"
 url = "git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-geodata.git"
-reference = "3e4b8bb62db3d39fb4651723e3ee61e8e5c22735"
-resolved_reference = "3e4b8bb62db3d39fb4651723e3ee61e8e5c22735"
+reference = "dd89d4f3dd8f92a8262b8df7914d40a72c41abe5"
+resolved_reference = "dd89d4f3dd8f92a8262b8df7914d40a72c41abe5"
 
 [[package]]
 name = "geographiclib"
@@ -40,6 +48,14 @@ dev-lint = ["async-generator", "flake8 (>=3.8.0,<3.9.0)", "isort (>=5.6.0,<5.7.0
 dev-test = ["async-generator", "coverage", "pytest-aiohttp", "pytest (>=3.10)", "sphinx"]
 requests = ["urllib3 (>=1.24.2)", "requests (>=2.16.2)"]
 timezone = ["pytz"]
+
+[[package]]
+name = "haversine"
+version = "2.5.1"
+description = "Calculate the distance between 2 points on Earth."
+category = "main"
+optional = false
+python-versions = ">=3.5"
 
 [[package]]
 name = "numpy"
@@ -135,7 +151,7 @@ torch = ["torch"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "e365ffa22487b7af0ba949784382d207cfe096a6595ed469bc208f0817add8ce"
+content-hash = "935c433655c37f0ffafd129b481a0fc18a13df72e719274f64f545f58d477a96"
 
 [metadata.files]
 de4l-geodata = []
@@ -146,6 +162,10 @@ geographiclib = [
 geopy = [
     {file = "geopy-2.2.0-py3-none-any.whl", hash = "sha256:8f1f949082b964385de61fcc3a667a6a9a6e242beb1ae8972449f164b2ba0e89"},
     {file = "geopy-2.2.0.tar.gz", hash = "sha256:58b7edf526b8c32e33126570b5f4fcdfaa29d4416506064777ae8d84cd103fdd"},
+]
+haversine = [
+    {file = "haversine-2.5.1-py2.py3-none-any.whl", hash = "sha256:6e76933a1042e6e62464b66ef686331e2798147eeedcb32b503db696d7bf0582"},
+    {file = "haversine-2.5.1.tar.gz", hash = "sha256:357e41dfddc4a0f2b1c941d92a590cac840f7ce4b3da14b45b68d968b3ad7cc7"},
 ]
 numpy = [
     {file = "numpy-1.21.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:8890b3360f345e8360133bc078d2dacc2843b6ee6059b568781b15b97acbe39f"},

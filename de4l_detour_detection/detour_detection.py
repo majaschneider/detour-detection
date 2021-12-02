@@ -5,8 +5,8 @@ from urllib.error import URLError
 
 import pandas as pd
 from urllib3.exceptions import ConnectTimeoutError
-from geodata import point as pt
-from geodata import route as rt
+from de4l_geodata.geodata import point as pt
+from de4l_geodata.geodata import route as rt
 from geopy.exc import GeocoderUnavailable, GeocoderServiceError
 from geopy.geocoders import Nominatim
 from geopy.location import Location

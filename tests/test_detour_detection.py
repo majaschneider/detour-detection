@@ -2,9 +2,9 @@ import unittest
 import datetime
 
 import pandas as pd
-from geodatasets import de4l
-from geodata import route as rt
-from geodata import point as pt
+from de4l_geodata.geodatasets import de4l
+from de4l_geodata.geodata import route as rt
+from de4l_geodata.geodata import point as pt
 
 from de4l_detour_detection import detour_detection
 
@@ -41,7 +41,7 @@ class TestMetric(unittest.TestCase):
             pd.Timedelta(value=1500, unit="millis"),
         ]
 
-        dataset = de4l.De4lSensorDataset.create_from_json("../resources/test-dataset.json", route_len=11)
+        dataset = de4l.De4lSensorDataset.create_from_json("resources/test-dataset.json", route_len=11)
 
         # Get a route from the dataset
         route = dataset[0]["route_with_timestamps"]
