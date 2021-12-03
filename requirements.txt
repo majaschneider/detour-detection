@@ -1,6 +1,0 @@
-de4l-geodata @ git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-geodata.git@3e4b8bb62db3d39fb4651723e3ee61e8e5c22735
-python_dateutil==2.8.2
-pandas
-torch
-geopy
-urllib3
