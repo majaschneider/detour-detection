@@ -4,6 +4,13 @@
 <p>This algorithm calculates the difference from the ideal path between
 selected geographical points. The higher the difference, the higher the privacy risk.</p>
 
+# Installation
+
+Install this package in your repository via pip:
+```bash
+pip install git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection.git
+```
+
 ## Setup
 
 ### Nominatim

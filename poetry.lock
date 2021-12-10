@@ -17,7 +17,7 @@ torch = ["torch (>=1.9.0,<1.10.0)"]
 
 [package.source]
 type = "git"
-url = "git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-geodata.git"
+url = "ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-geodata.git"
 reference = "dd89d4f3dd8f92a8262b8df7914d40a72c41abe5"
 resolved_reference = "dd89d4f3dd8f92a8262b8df7914d40a72c41abe5"
 
@@ -151,7 +151,7 @@ torch = ["torch"]
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.11"
-content-hash = "935c433655c37f0ffafd129b481a0fc18a13df72e719274f64f545f58d477a96"
+content-hash = "197253af83399d82093165ffb7c511a291ee573709f2a165e11a9a111c847958"
 
 [metadata.files]
 de4l-geodata = []
