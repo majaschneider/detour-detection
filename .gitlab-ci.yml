@@ -50,17 +50,15 @@ stages:
 flake8:
   stage: code analysis
   script:
-    - pip install flake8
       # Check for max line length of 120.
-    - flake8 --max-line-length=120 */*.py
+    - poetry run flake8 --max-line-length=120 */*.py
 
 pylint:
   stage: code analysis
   allow_failure: true
   script:
-    - pip install pylint
       # Run pylint with line length warnings (C0301) disabled.
-    - pylint -d C0301 */*.py
+    - poetry run pylint -d C0301 */*.py
 
 unittest:
   stage: test
