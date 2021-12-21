@@ -15,21 +15,22 @@ from geopy.location import Location
 
 def select_samples(route, temporal_distance, start_timestamp=None):
     """
-    Samples points from a given route with a certain temporal distance. Sampling starts at the first route point or, if
-    provided, at start_timestamp. The route must contain timestamps. The function assumes that the temporal distances
-    between points in the route are equal. Dealing with irregular timestamps will be addressed later.
+    Selects points of a given route so that a certain temporal distance is kept. Sampling starts at the first route
+    point or, if provided, at start_timestamp. The route points must contain timestamps. The function assumes that the
+    temporal distances between points in the route are equal. Dealing with irregular timestamps will be addressed later.
 
     Parameter
     ---------
     route : rt.Route
         A route object containing trajectory data represented as de4l_geodata.geodata.point_t.PointT. If the parameter
-        route is empty the returned route is empty as well. The points in the route are assumed to be sorted according
-        to timestamp. In other words: the oldest timestamp is at the first index.
+        route is empty the returned route is empty as well. The points in the route are assumed to be sorted ascending
+        by their timestamp.
     temporal_distance : pd.Timedelta
         The temporal distance in seconds between sampled points.
     start_timestamp : pd.Timestamp
         An optional timestamp that marks the starting point for selection of samples. If None, sampling starts at the
         first route point.
+
     Returns
     -------
     sampled_points : rt.Route
@@ -69,6 +70,54 @@ def select_samples(route, temporal_distance, start_timestamp=None):
             sampled_points.append(route[next_idx])
             current_idx = next_idx
 
+    return sampled_points
+
+
+def sample_from_shape(route, spatial_distance):
+    """
+    Creates new points along the shape of the indicated route such that a certain spatial distance is kept. Sampling
+    starts at the first route point. The route points must contain timestamps. The sampled points are interpolated
+    along the shape of the input route, which means in turn, that they need not necessarily match the road network. If
+    the latter is required, the sampled points need to be map-matched afterwards.
+
+    Parameter
+    ---------
+    route : rt.Route
+        A route containing geographical points in radians and 'latlon' format, indicating a trajectory. If the route
+        is shorter than the spatial_distance or has less than two points, an empty route is returned.
+    spatial_distance : float
+        The spatial distance in meters between each pair of consecutive sampled points.
+
+    Returns
+    -------
+    sampled_points : rt.Route
+        A route containing geographical points in radians and 'latlon' format, sampled from input route at a rate of
+        spatial_distance.
+    """
+    if not (isinstance(route, rt.Route) and len(route) > 1):
+        raise ValueError("Wrong value for parameter route. Make sure it is of type route.Route and has at least two "
+                         "points.")
+
+    # sample first route point
+    first_point_copy = pt.Point(route[0].copy(), route[0].get_geo_reference_system())
+    last_point = route[len(route) - 1]
+    sampled_points = rt.Route([first_point_copy])
+    previous_point = first_point_copy
+
+    remaining_spatial_distance = spatial_distance
+    for current_point in route:
+        # if next route point is the last and the current distance to it is smaller than remaining_spatial_distance
+        if current_point is last_point and remaining_spatial_distance > pt.get_distance(previous_point, current_point):
+            break
+        while remaining_spatial_distance <= pt.get_distance(previous_point, current_point):
+            # sample an interpolated point
+            ratio_interpolated_point = spatial_distance / pt.get_distance(previous_point, current_point)
+            interpolated_point = pt.get_interpolated_point(previous_point, current_point, ratio_interpolated_point)
+            sampled_points.append(interpolated_point)
+            previous_point = interpolated_point
+            remaining_spatial_distance = spatial_distance
+        # advance the remaining spatial distance on the current segment
+        remaining_spatial_distance -= pt.get_distance(previous_point, current_point)
     return sampled_points
 
 
