@@ -1,7 +1,7 @@
 """This module detects detours to measure the privacy risk inherent to spatio-temporal trajectories containing stops.
 """
 
-from math import degrees
+from math import degrees, radians
 from urllib.error import URLError
 
 import pandas as pd
@@ -245,7 +245,8 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
     -------
     directions : dict
         Directions between start and end as a dict. The dict contains distance, duration, navigation instructions and a
-        linestring of the proposed route between start and end. The
+        linestring of the proposed route between start and end. The linestring contains the longitude and latitude of
+        geographical points in radians.
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
@@ -282,6 +283,13 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
         # extract the actual directions out of the result
         directions = directions_node['properties']['segments'][0]
         directions['line_string'] = directions_node['geometry']['coordinates']
+        route = directions['line_string']
+        # convert degree format to radians format
+        for point in route:
+            point[0] = radians(point[0])
+            point[1] = radians(point[1])
+        directions['line_string'] = route
+
     except openrouteservice.exceptions.ApiError:
         directions = {}
 
