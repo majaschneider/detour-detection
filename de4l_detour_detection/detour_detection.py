@@ -1,5 +1,6 @@
 """This module detects detours to measure the privacy risk inherent to spatio-temporal trajectories containing stops.
 """
+
 from math import degrees
 from urllib.error import URLError
 
@@ -240,14 +241,11 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
         'cycling-road', 'cycling-mountain', 'cycling-electric'}
         Specifies the mode of transport to use when calculating directions.
 
-
     Returns
     -------
     directions : dict
         Directions between start and end as a dict. The dict contains distance, duration, navigation instructions and a
         linestring of the proposed route between start and end.
-
-
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
@@ -315,8 +313,6 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
         A list containing directions connecting every consecutive pair of points from the input. Every entry is a dict
         that contains distance, duration, navigation instructions and a linestring of the proposed route between start
         and end.
-
-
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
