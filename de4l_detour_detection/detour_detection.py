@@ -257,15 +257,14 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             'Failed to get a route for two points. Make sure the argument route contains values of type '
             'del4_geodata.geodata.point.Point.'
         )
-    elif not isinstance(openrouteservice_client, openrouteservice.client.Client):
+    if not isinstance(openrouteservice_client, openrouteservice.client.Client):
         raise ValueError(
             'Failed to use the Openrouteservice client. Make sure a client for Openrouteservice was passed as argument.'
         )
-    elif openrouteservice_profile not in valid_openrouteservice_profiles:
+    if openrouteservice_profile not in valid_openrouteservice_profiles:
         raise ValueError(
-            'The Openrouteservice profile you provided is not valid. Please choose a profile out of {}.'.format(
-                valid_openrouteservice_profiles
-            )
+            f'The Openrouteservice profile you provided is not valid. Please choose a profile out of '
+            f'{valid_openrouteservice_profiles}.'
         )
 
     coords = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
@@ -327,11 +326,10 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
             'Failed to get connecting routes. Make sure to pass a route of type de4l_geodata.geodata.route.Route that '
             'contains at least two points.'
         )
-    elif openrouteservice_profile not in valid_openrouteservice_profiles:
+    if openrouteservice_profile not in valid_openrouteservice_profiles:
         raise ValueError(
-            'The openrouteservice profile you provided is not valid. Please choose a profile out of {}.'.format(
-                valid_openrouteservice_profiles
-            )
+            f'The openrouteservice profile you provided is not valid. Please choose a profile out of '
+            f'{valid_openrouteservice_profiles}.'
         )
 
     ors_url = 'http://' + openrouteservice_base_path + '/ors'
