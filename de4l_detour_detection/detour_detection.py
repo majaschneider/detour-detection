@@ -99,10 +99,10 @@ def sample_from_shape(route, spatial_distance):
                          "points.")
 
     # sample first route point
-    first_point_copy = pt.Point(route[0].copy(), route[0].get_geo_reference_system())
+    first_point = route[0].deep_copy()
     last_point = route[len(route) - 1]
-    sampled_points = rt.Route([first_point_copy])
-    previous_point = first_point_copy
+    sampled_points = rt.Route([first_point])
+    previous_point = first_point
 
     remaining_spatial_distance = spatial_distance
     for current_point in route:
