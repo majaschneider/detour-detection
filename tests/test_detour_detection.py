@@ -1,3 +1,6 @@
+"""Test of detour detection.
+"""
+
 import math
 import unittest
 import datetime
@@ -13,9 +16,12 @@ from de4l_detour_detection import detour_detection
 
 
 class TestMetric(unittest.TestCase):
+    """Test of detour detection.
+    """
 
     def test_select_samples(self):
-
+        """Test of sample selection from a route.
+        """
         # Manually define the timestamps that should be in the test dataset
         timestamps = [
             pd.Timestamp('2021-02-22T10:31:33.000Z'),
@@ -117,6 +123,8 @@ class TestMetric(unittest.TestCase):
             detour_detection.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
 
     def test_sample_from_shape(self):
+        """Test of sample generation from the shape of a route.
+        """
         # design the example shape
         # start at coordinate origin
         point1 = pt.Point([0, 0])
@@ -175,7 +183,8 @@ class TestMetric(unittest.TestCase):
             self.assertAlmostEqual(expected_sampled_points[idx].y_lat, sampled_points[idx].y_lat, 10)
 
     def test_reverse_geocode(self):
-
+        """Test of reverse geocoding of geographical points to addresses.
+        """
         nominatim_url = 'localhost:1234'
 
         to_reverse = [
@@ -195,7 +204,8 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(4, wrong_values)
 
     def test_get_directions_for_points(self):
-
+        """Test of the shortest route calculation between two geographical points.
+        """
         start_point = pt.Point([0.9, 0.1])
         end_point = pt.Point([0.8, 0.2])
 
@@ -224,7 +234,8 @@ class TestMetric(unittest.TestCase):
                           openrouteservice_profile='rocket_spaceship')
 
     def test_get_directions_for_route(self):
-
+        """Test of the shortest route calculation between each two geographical points of a route.
+        """
         correct_route = rt.Route([pt.Point([0.9, 0.1]), pt.Point([0.8, 0.2])])
         base_path = 'localhost:8008'
 
