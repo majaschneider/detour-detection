@@ -130,10 +130,10 @@ class TestMetric(unittest.TestCase):
         point1 = pt.Point([0, 0])
         angle1 = math.radians(0)
         # move along x-axis for 100 meters
-        point2 = pt.Point(point1.copy()).add_vector(100, angle1)
+        point2 = point1.add_vector(100, angle1)
         angle2 = math.radians(45)
         # move in 45 degrees angle north east for 50 meters
-        point3 = pt.Point(point2.copy()).add_vector(50, angle2)
+        point3 = point2.add_vector(50, angle2)
         example_shape = rt.Route([point1, point2, point3])
 
         # When sampling every 20 meters, we expect to sample six points along the x-axis with a distance between each
@@ -178,7 +178,7 @@ class TestMetric(unittest.TestCase):
         self.assertEqual(len(expected_sampled_points), len_sampled_points)
 
         for idx in range(len_sampled_points):
-            sampled_points[idx].to_cartesian()
+            sampled_points[idx].to_cartesian_()
             self.assertAlmostEqual(expected_sampled_points[idx].x_lon, sampled_points[idx].x_lon, 10)
             self.assertAlmostEqual(expected_sampled_points[idx].y_lat, sampled_points[idx].y_lat, 10)
 
