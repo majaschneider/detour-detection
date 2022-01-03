@@ -77,9 +77,9 @@ def select_samples(route, temporal_distance, start_timestamp=None):
 def sample_from_shape(route, spatial_distance):
     """
     Creates new points along the shape of the indicated route such that a certain spatial distance is kept. Sampling
-    starts at the first route point. The route points must contain timestamps. The sampled points are interpolated
-    along the shape of the input route, which means in turn, that they need not necessarily match the road network. If
-    the latter is required, the sampled points need to be map-matched afterwards.
+    starts at the first route point. The sampled points are interpolated along the shape of the input route, which means
+    in turn, that they need not necessarily match the road network. If the latter is required, the sampled points need
+    to be map-matched afterwards.
 
     Parameter
     ---------
