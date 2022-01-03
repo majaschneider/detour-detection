@@ -245,7 +245,7 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
     -------
     directions : dict
         Directions between start and end as a dict. The dict contains distance, duration, navigation instructions and a
-        linestring of the proposed route between start and end.
+        linestring of the proposed route between start and end. The
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
@@ -265,10 +265,10 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             f'{valid_openrouteservice_profiles}.'
         )
 
-    coords = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
+    coordinates = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
 
     try:
-        openrouteservice_response = openrouteservice_client.directions(coords,
+        openrouteservice_response = openrouteservice_client.directions(coordinates,
                                                                        profile=openrouteservice_profile,
                                                                        format='geojson')
         routes = openrouteservice_response['features']
@@ -276,9 +276,9 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             directions_node = routes[0]
         # if there are multiple routing results available, choose the one with the shortest duration
         else:
-            times = [r['properties']['summary']['duration'] for r in routes]
+            times = [route['properties']['summary']['duration'] for route in routes]
             min_time = min(times)
-            directions_node = [r for r in routes if r['properties']['summary']['duration'] == min_time][0]
+            directions_node = [route for route in routes if route['properties']['summary']['duration'] == min_time][0]
         # extract the actual directions out of the result
         directions = directions_node['properties']['segments'][0]
         directions['line_string'] = directions_node['geometry']['coordinates']
