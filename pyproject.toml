@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "de4l-detour-detection"
-version = "0.0.1"
+version = "0.0.3"
 description = "A package for estimating the exposure of private information in trajectory data by detecting detours."
 repository = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection"
 authors = ["Maja Schneider","Lukas Gehrke"]

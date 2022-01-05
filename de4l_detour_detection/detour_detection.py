@@ -1,6 +1,7 @@
 """This module detects detours to measure the privacy risk inherent to spatio-temporal trajectories containing stops.
 """
-from math import degrees
+
+from math import degrees, radians
 from urllib.error import URLError
 
 import pandas as pd
@@ -76,9 +77,9 @@ def select_samples(route, temporal_distance, start_timestamp=None):
 def sample_from_shape(route, spatial_distance):
     """
     Creates new points along the shape of the indicated route such that a certain spatial distance is kept. Sampling
-    starts at the first route point. The route points must contain timestamps. The sampled points are interpolated
-    along the shape of the input route, which means in turn, that they need not necessarily match the road network. If
-    the latter is required, the sampled points need to be map-matched afterwards.
+    starts at the first route point. The sampled points are interpolated along the shape of the input route, which means
+    in turn, that they need not necessarily match the road network. If the latter is required, the sampled points need
+    to be map-matched afterwards.
 
     Parameter
     ---------
@@ -240,14 +241,12 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
         'cycling-road', 'cycling-mountain', 'cycling-electric'}
         Specifies the mode of transport to use when calculating directions.
 
-
     Returns
     -------
     directions : dict
         Directions between start and end as a dict. The dict contains distance, duration, navigation instructions and a
-        linestring of the proposed route between start and end.
-
-
+        linestring of the proposed route between start and end. The linestring contains the longitude and latitude of
+        geographical points in radians.
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
@@ -267,10 +266,10 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             f'{valid_openrouteservice_profiles}.'
         )
 
-    coords = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
+    coordinates = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
 
     try:
-        openrouteservice_response = openrouteservice_client.directions(coords,
+        openrouteservice_response = openrouteservice_client.directions(coordinates,
                                                                        profile=openrouteservice_profile,
                                                                        format='geojson')
         routes = openrouteservice_response['features']
@@ -278,12 +277,19 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             directions_node = routes[0]
         # if there are multiple routing results available, choose the one with the shortest duration
         else:
-            times = [r['properties']['summary']['duration'] for r in routes]
+            times = [route['properties']['summary']['duration'] for route in routes]
             min_time = min(times)
-            directions_node = [r for r in routes if r['properties']['summary']['duration'] == min_time][0]
+            directions_node = [route for route in routes if route['properties']['summary']['duration'] == min_time][0]
         # extract the actual directions out of the result
         directions = directions_node['properties']['segments'][0]
         directions['line_string'] = directions_node['geometry']['coordinates']
+        route = directions['line_string']
+        # convert degree format to radians format
+        for point in route:
+            point[0] = radians(point[0])
+            point[1] = radians(point[1])
+        directions['line_string'] = route
+
     except openrouteservice.exceptions.ApiError:
         directions = {}
 
@@ -315,8 +321,6 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
         A list containing directions connecting every consecutive pair of points from the input. Every entry is a dict
         that contains distance, duration, navigation instructions and a linestring of the proposed route between start
         and end.
-
-
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
