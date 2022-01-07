@@ -2,8 +2,10 @@
 """
 import warnings
 from urllib.error import URLError
+from decimal import Decimal
 
 import pandas as pd
+import numpy as np
 import openrouteservice
 from urllib3.exceptions import ConnectTimeoutError
 from de4l_geodata.geodata import point as pt
@@ -148,7 +150,7 @@ def sample_from_shape(route, spatial_distance):
                          "points.")
 
     # sample first route point
-    first_point = route[0].deep_copy()
+    first_point = pt.Point(route[0], coordinates_unit=route[0].get_coordinates_unit())
     last_point = route[len(route) - 1]
     sampled_points = rt.Route([first_point])
 
@@ -464,3 +466,256 @@ def get_directions_for_route(route, openrouteservice_base_path, scheme='https', 
         directions_for_route.append(directions)
 
     return directions_for_route
+
+
+def calculate_poi_risk(route, spatial_distance, ors_path, ors_scheme, ors_profile, nominatim, sampling_distance=25,
+                       acceptable_distance_to_shortest_route=50, exceeding_for_maximum_risk=50, map_matching=True):
+    """
+    Extracts places of interest from the route by analyzing each route point's risk of belonging to a detour and
+    therefore of being a place of interest. The algorithm selects regularly spaced points from the route, so that a
+    minimum spatial distance between each sampled point is kept. In the following, the shortest route that connects
+    each of the sampled points is calculated via openrouteservice. This route is an assumed optimal route that is
+    compared to the original route in order to detect deviations. Points from the original route, that deviate
+    by more than an acceptable distance are POI candidates. If openrouteservice is not available, the direct
+    connection between points is used as the shortest path. The point of each candidate region of successive connected
+    candidates, which deviates the most, is considered a POI.
+
+    Parameters
+    ----------
+    route : rt.Route
+        The route to screen for places of interest.
+    spatial_distance : float
+        The distance between the points that are selected from the route in order to calculate the shortest route to
+        compare the original route with.
+    ors_path : str
+        The base address of a running instance of Openrouteservice. Its structure should be '[host]:[port]'.
+    ors_scheme : str
+        The protocol to be used for openrouteservice queries, e.g. http or https.
+    ors_profile :
+        {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
+        'cycling-road', 'cycling-mountain', 'cycling-electric'}
+        Specifies the mode of transport to use when calculating directions.
+        See: https://openrouteservice-py.readthedocs.io/en/latest/#module-openrouteservice.directions
+    nominatim : Nominatim
+        An instance of Nominatim that is ready to accept requests.
+    sampling_distance : float
+        The distance in meters between sampled points on the shortest route. The shorter the distance, the more accurate
+        the distance calculation between route points and shortest route will be. The longer the distance, the higher
+        the computational cost. A recommended value is 25 meters.
+    acceptable_distance_to_shortest_route : float
+        Distance in meters that a route point is allowed to be apart from the shortest route between selected points,
+        without indicating that the point has a high risk of belonging to a detour and therefore being a place of
+        interest. If a route point has a deviation from the shortest route that is greater than this threshold, its
+        risk will be 100%. A recommended value is 50 meters.
+    exceeding_for_maximum_risk : int
+        This parameter serves for identifying the risk of a point, by measuring, by how much the point's distance to the
+        shortest route exceeds the acceptable_distance_to_shortest_route value. If the exceeding is at least as high as
+        exceeding_for_maximum_risk, measured in meters, the risk will be maximal.
+    map_matching : bool
+        If True, route points will be mapped to a road before further analysis.
+
+    Returns
+    -------
+    shortest_route : Route
+        The shortest route between each consecutive pair of selected route points.
+    sampled_routes : Route
+        The sampled points from the shortest route.
+    selected_points : Route
+        The points that were selected to calculate the shortest routes.
+    distances_to_shortest_route : List
+        A list of the distances of each point to the shortest route.
+    risks : List
+        A list of the probabilities of each route point to be part of a detour and therefore being a place of interest.
+        The greater the distance between route points and the shortest route, the higher the risk. The risk is
+        calculated as a ratio of the distance between route point and shortest route and the risk distance threshold.
+        If the distance is higher than the threshold, the probability is cut off at 100%.
+    pois : rt.Route
+        A list of route points, identified as places of interest.
+    poi_ids : List
+        The indices of the found POIs in the route.
+    """
+    input_route_coordinates_unit_is_radians = route.get_coordinates_unit() == 'radians'
+    if not input_route_coordinates_unit_is_radians:
+        route = route.to_radians()
+
+    # match each route point to its closest street segment
+    if map_matching:
+        route = rt.Route([nominatim_reverse(point, nominatim) for point in route])
+
+    # select points from the route so that the given spatial distance is kept
+    selected_points_ids, selected_points = select_samples_by_spatial_distance(route, spatial_distance)
+    # add last route point of real route in case it was not selected
+    if selected_points[-1] != route[-1]:
+        selected_points.append(route[-1])
+        selected_points_ids.append(len(route) - 1)
+
+    distances_to_shortest_route = []
+    distance_exceedings = []
+    risks = []
+    shortest_routes = []
+    sampled_routes = []
+    # for each segment in the selection, calculate the shortest route and compare it to each segment point
+    nr_selected_points = len(selected_points)
+    for i in range(nr_selected_points - 1):
+        segment_end_points = rt.Route([selected_points[i], selected_points[i + 1]])
+        # calculate the shortest route between start and end of segment
+        shortest_route = get_directions_for_route(segment_end_points, ors_path, ors_scheme, ors_profile)[0]['route']
+        shortest_routes.append(shortest_route)
+        # sample new points from the shortest route in regular distance
+        sampled_route = sample_from_shape(shortest_route, spatial_distance=sampling_distance)
+        # append last point from shortest route as it is usually not sampled
+        sampled_route.append(shortest_route[-1])
+        sampled_routes.append(sampled_route)
+        # for each route point in the segment, calculate the distance to the closest sample from the shortest route
+        segment_start_idx = selected_points_ids[i]
+        segment_end_idx = selected_points_ids[i + 1]
+        # ignore first segment point (except for first segment), to avoid comparing end and start points of consecutive
+        # segments twice
+        first_segment_element = 1 if i > 0 else 0
+        segment = rt.Route([route[j] for j in range(segment_start_idx + first_segment_element, segment_end_idx + 1)])
+        for point in segment:
+            distance_to_shortest_route = \
+                min([pt.get_distance(point, sampled_point) for sampled_point in sampled_route])
+            distances_to_shortest_route.append(round(distance_to_shortest_route))
+
+            # calculate by how much each point exceeds the acceptable distance to the shortest route
+            exceeding = round(distance_to_shortest_route - acceptable_distance_to_shortest_route)
+            if exceeding < 0:
+                exceeding = 0
+            distance_exceedings.append(exceeding)
+
+            # calculate a risk value in [0,1] for realising a color coding in plots
+            risk = float(round(Decimal(exceeding / exceeding_for_maximum_risk), 2))
+            if risk > 1:
+                risk = 1
+            risks.append(risk)
+
+    # calculate the POIs based on the distance exceedings
+    poi_ids = detect_pois_from_exceedings(distance_exceedings)
+    pois = rt.Route([route[idx] for idx in poi_ids])
+
+    if not input_route_coordinates_unit_is_radians:
+        for i in range(len(sampled_routes)):
+            shortest_routes[i].to_degrees_()
+            sampled_routes[i].to_degrees_()
+        selected_points.to_degrees_()
+        pois.to_degrees_()
+
+    shortest_route = [point for segment in shortest_routes for point in segment]
+    sampled_route = [point for segment in sampled_routes for point in segment]
+
+    return shortest_route, sampled_route, selected_points, distances_to_shortest_route, risks, pois, poi_ids
+
+
+def detect_pois_from_exceedings(distance_exceedings):
+    """
+    Detect places of interest (POI) based on the exceeding distance over a set distance of points in a route. A point is
+    a POI, if it has the maximum exceeding distance in a candidate region of connected points, that all exceed the set
+    distance.
+
+    Parameters
+    ----------
+    distance_exceedings : List
+        A list containing the exceeding distance over a maximum distance for each point in route.
+
+    Returns
+    -------
+    poi_ids : List
+        A list of the indices of the distance_exceedings, that have been detected as place of interest.
+    """
+    poi_ids = []
+    in_poi_candidate_region = distance_exceedings[0] > 0
+    candidate_distances = []
+    candidate_ids = []
+    nr_points = len(distance_exceedings)
+    for idx in range(nr_points):
+        exceeding = distance_exceedings[idx]
+        if exceeding > 0:
+            candidate_distances.append(exceeding)
+            candidate_ids.append(idx)
+            in_poi_candidate_region = True
+        if in_poi_candidate_region and (exceeding == 0 or idx == nr_points - 1):
+            # candidate region has ended, find maximum exceeding and assign first point with max distance as POI
+            max_exceeding = np.max(candidate_distances)
+            nr_candidates = len(candidate_distances)
+            poi = [candidate_ids[i] for i in range(nr_candidates) if candidate_distances[i] == max_exceeding][0]
+            poi_ids.append(poi)
+            candidate_distances = []
+            candidate_ids = []
+            in_poi_candidate_region = False
+    return poi_ids
+
+
+def calculate_common_poi_risk(parameters, min_count, route, ors_path, ors_scheme, ors_profile, nominatim,
+                              exceeding_for_maximum_risk=50, map_matching=True):
+    """
+    Calculate POIs with detour-detection approach in multiple parameter settings and select only such POIs that have
+    been detected a minimum number of times.
+
+    Parameters
+    ----------
+    parameters : List
+        The parameters of the detour-detection:
+        spatial_distance : float
+            The distance between the points that are selected from the route in order to calculate the shortest route to
+            compare the original route with.
+        sampling_distance : float
+            The distance in meters between sampled points on the shortest route. The shorter the distance, the more
+            accurate the distance calculation between route points and shortest route will be. The longer the distance,
+            the higher the computational cost. A recommended value is 25 meters.
+        acceptable_distance_to_shortest_route : float
+            Distance in meters that a route point is allowed to be apart from the shortest route between selected
+            points, without indicating that the point has a high risk of belonging to a detour and therefore being a
+            place of interest. If a route point has a deviation from the shortest route that is greater than this
+            threshold, its risk will be 100%. A recommended value is 50 meters.
+    min_count : int
+        The minimum number of times, each POI has to be detected with a parameter setting, before it is rated a POI.
+    route : rt.Route
+        The route to screen for places of interest.
+    ors_path : str
+        The base address of a running instance of Openrouteservice. Its structure should be '[host]:[port]'.
+    ors_scheme : str
+        The protocol to be used for openrouteservice queries, e.g. http or https.
+    ors_profile :
+        {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
+        'cycling-road', 'cycling-mountain', 'cycling-electric'}
+        Specifies the mode of transport to use when calculating directions.
+        See: https://openrouteservice-py.readthedocs.io/en/latest/#module-openrouteservice.directions
+    nominatim : Nominatim
+        An instance of Nominatim that is ready to accept requests.
+    exceeding_for_maximum_risk : int
+        This parameter serves for identifying the risk of a point, by measuring, by how much the point's distance to the
+        shortest route exceeds the acceptable_distance_to_shortest_route value. If the exceeding is at least as high as
+        exceeding_for_maximum_risk, measured in meters, the risk will be maximal.
+    map_matching : bool
+        If True, route points will be mapped to a road before further analysis.
+
+    Returns
+    -------
+    pois : List
+        A list of POIs that have been identified in the route.
+    pois_ids_min_count : List
+        A list of the indices of the POIs that have been identified in the route.
+    """
+    all_poi_ids = []
+    for (spatial_distance, sampling_distance, acceptable_distance) in parameters:
+        shortest_routes, sampled_routes, selected_points, distances_to_shortest_route, _, detected_pois, poi_ids = \
+            calculate_poi_risk(route=route,
+                               map_matching=map_matching,
+                               spatial_distance=spatial_distance,
+                               ors_path=ors_path,
+                               ors_scheme=ors_scheme,
+                               ors_profile=ors_profile,
+                               nominatim=nominatim,
+                               sampling_distance=sampling_distance,
+                               acceptable_distance_to_shortest_route=acceptable_distance,
+                               exceeding_for_maximum_risk=exceeding_for_maximum_risk)
+        all_poi_ids.append(poi_ids)
+
+    # select only pois that have been detected multiple times
+    poi_ids_flat = [poi for poi_list in all_poi_ids for poi in poi_list]
+    poi_ids = list(set(poi_ids_flat))
+    poi_counts = [len([el for el in poi_ids_flat if el == poi]) for poi in list(set(poi_ids))]
+    pois_ids_min_count = [poi_ids_flat[j] for j in range(len(poi_ids)) if poi_counts[j] >= min_count]
+    pois = rt.Route([route[idx] for idx in pois_ids_min_count])
+    return pois, pois_ids_min_count
