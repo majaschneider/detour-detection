@@ -27,7 +27,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
         route is empty the returned route is empty as well. The points in the route are assumed to be sorted ascending
         by their timestamp.
     temporal_distance : pd.Timedelta
-        The temporal distance in seconds between sampled points.
+        The temporal distance between sampled points.
     start_timestamp : pd.Timestamp
         An optional timestamp that marks the starting point for selection of samples. If None, sampling starts at the
         first route point.
