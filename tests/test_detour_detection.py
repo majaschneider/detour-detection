@@ -3,7 +3,7 @@
 
 import math
 import unittest
-import datetime
+from datetime import datetime as dt
 
 import openrouteservice
 import pandas as pd
@@ -19,8 +19,8 @@ class TestMetric(unittest.TestCase):
     """Test of detour detection.
     """
 
-    def test_select_samples(self):
-        """Test of sample selection from a route.
+    def test_select_samples_by_temporal_distance(self):
+        """Test of sample selection by temporal distance from a route.
         """
         # Manually define the timestamps that should be in the test dataset
         timestamps = [
@@ -86,41 +86,67 @@ class TestMetric(unittest.TestCase):
             # With start timestamp later than the timestamps to sample
             (timedeltas[3], start_timestamp_too_late, []),
         ]:
-            sampled_points = detour_detection.select_samples(route, temporal_distance, start_timestamp)
+            sampled_points = detour_detection.select_samples_by_temporal_distance(route, temporal_distance,
+                                                                                  start_timestamp)
             expected_timestamps = [timestamps[idx] for idx in expected_indices]
             sampled_timestamps = [point.timestamp for point in sampled_points]
             self.assertEqual(expected_timestamps, sampled_timestamps)
 
         # Test parameters that should lead to an error
         with self.assertRaises(ValueError):
-            detour_detection.select_samples(route, temporal_distance='1')
-            detour_detection.select_samples(route, temporal_distance=1)
-            detour_detection.select_samples(route,
-                                            temporal_distance=timedeltas[1],
-                                            start_timestamp='2021-02-22T10:32:41.000Z')
-            detour_detection.select_samples(route,
-                                            temporal_distance=timedeltas[1],
-                                            start_timestamp=1613989893.0)
+            detour_detection.select_samples_by_temporal_distance(route, temporal_distance='1')
+            detour_detection.select_samples_by_temporal_distance(route, temporal_distance=1)
+            detour_detection.select_samples_by_temporal_distance(route, temporal_distance=timedeltas[1],
+                                                                 start_timestamp='2021-02-22T10:32:41.000Z')
+            detour_detection.select_samples_by_temporal_distance(route, temporal_distance=timedeltas[1],
+                                                                 start_timestamp=1613989893.0)
 
             # Disallow timestamps or timedeltas of the datetime module
-            detour_detection.select_samples(route,
-                                            temporal_distance=datetime.timedelta(seconds=5),
-                                            start_timestamp=timestamps[0])
-            detour_detection.select_samples(route,
-                                            timedeltas[1],
-                                            datetime.datetime.fromtimestamp('2021-02-22T10:32:41.000Z'))
+            detour_detection.select_samples_by_temporal_distance(route, temporal_distance=dt.timedelta(seconds=5),
+                                                                 start_timestamp=timestamps[0])
+            detour_detection.select_samples_by_temporal_distance(route, timedeltas[1], dt.datetime.
+                                                                 fromtimestamp('2021-02-22T10:32:41.000Z'))
 
             # Test if passing an empty route leads to an error
-            detour_detection.select_samples(rt.Route(), temporal_distance=timedeltas[1])
+            detour_detection.select_samples_by_temporal_distance(rt.Route(), temporal_distance=timedeltas[1])
 
             # Test if passing a wrong type for route leads to an error
-            detour_detection.select_samples([[1, 1]], temporal_distance=timedeltas[1])
+            detour_detection.select_samples_by_temporal_distance([[1, 1]], temporal_distance=timedeltas[1])
 
             # Test if passing a route containing points without timestamps leads to an error
             route_without_timestamps = rt.Route()
             route_without_timestamps.append(pt.Point([51.3396955, 12.3730747]))
             route_without_timestamps.append(pt.Point([51.0504088, 13.7372621]))
-            detour_detection.select_samples(route_without_timestamps, temporal_distance=timedeltas[1])
+            detour_detection.select_samples_by_temporal_distance(route_without_timestamps,
+                                                                 temporal_distance=timedeltas[1])
+
+    def test_select_samples_by_spatial_distance(self):
+        """Test of sample selection by spatial distance from a route.
+        """
+        # design the example route
+        #                         |
+        #                         |
+        #                         |
+        #             ____________|
+        #            /
+        # __________/
+        # start at coordinate origin
+        point1 = pt.Point([0, 0], geo_reference_system='cartesian')
+        point1.to_latlon_()
+        # move along x-axis for 100 meters
+        point2 = point1.add_vector(100, math.radians(0))
+        # move in 45 degrees angle north east for 50 meters
+        point3 = point2.add_vector(50, math.radians(45))
+        # move 100 meters east parallel to the x-axis
+        point4 = point3.add_vector(100, math.radians(0))
+        # move 100 meters north parallel to the y-axis
+        point5 = point4.add_vector(100, math.radians(90))
+
+        route = rt.Route([point1, point2, point3, point4, point5])
+        selected_samples = detour_detection.select_samples_by_spatial_distance(route, spatial_distance=125.0)
+        expected_result = rt.Route([point1, point3, point5])
+
+        self.assertEqual(expected_result, selected_samples)
 
     def test_sample_from_shape(self):
         """Test of sample generation from the shape of a route.

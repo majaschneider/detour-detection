@@ -14,7 +14,7 @@ from geopy.geocoders import Nominatim
 from geopy.location import Location
 
 
-def select_samples(route, temporal_distance, start_timestamp=None):
+def select_samples_by_temporal_distance(route, temporal_distance, start_timestamp=None):
     """
     Selects points of a given route so that a certain temporal distance is kept. Sampling starts at the first route
     point or, if provided, at start_timestamp. The route points must contain timestamps. The function assumes that the
@@ -68,6 +68,50 @@ def select_samples(route, temporal_distance, start_timestamp=None):
     for next_idx in range(current_idx+1, len(route)):
         next_timestamp = route[next_idx].timestamp
         if (next_timestamp-route[current_idx].timestamp) >= temporal_distance:
+            sampled_points.append(route[next_idx])
+            current_idx = next_idx
+
+    return sampled_points
+
+
+def select_samples_by_spatial_distance(route, spatial_distance, start_point_idx=0):
+    """
+    Samples points from a given route with a certain temporal distance. Sampling starts at the first route point or, if
+    provided, at the point at index start_point_idx.
+
+    Parameter
+    ---------
+    route : rt.Route
+        A route object containing trajectory data represented as pt.Point. If the parameter route is empty the returned
+        route is empty as well. The points in the route are assumed to be sorted according to time. In other words: the
+        oldest point is at the first index.
+    spatial_distance : float
+        The spatial distance in meters between sampled points.
+    start_point_idx : int
+        The index of the point in route that marks the starting point for selection of samples. Per default, sample
+        selection starts at the first route point.
+
+    Returns
+    -------
+    sampled_points : rt.Route
+        A route containing the sampled points according to the spatial distance.
+    """
+    if not isinstance(route, rt.Route):
+        raise ValueError('Wrong value for parameter route. Make sure it is of type de4l_geodata.geodata.route.Route.')
+
+    if not isinstance(spatial_distance, (int, float)) or spatial_distance < 0:
+        raise ValueError('Wrong value for parameter spatial_distance. Check that it is a number and greater than zero.')
+
+    sampled_points = rt.Route()
+    current_idx = start_point_idx
+
+    # Add first point before iterating
+    if current_idx < len(route):
+        sampled_points.append(route[current_idx])
+
+    # Iterate over the rest of the route and check whether current and next point are spatial_distance apart
+    for next_idx in range(current_idx + 1, len(route)):
+        if pt.get_distance(route[current_idx], route[next_idx]) >= spatial_distance:
             sampled_points.append(route[next_idx])
             current_idx = next_idx
 
