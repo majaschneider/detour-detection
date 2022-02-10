@@ -1,7 +1,6 @@
 """This module detects detours to measure the privacy risk inherent to spatio-temporal trajectories containing stops.
 """
-
-from math import degrees, radians
+import warnings
 from urllib.error import URLError
 
 import pandas as pd
@@ -11,7 +10,6 @@ from de4l_geodata.geodata import point as pt
 from de4l_geodata.geodata import route as rt
 from geopy.exc import GeocoderUnavailable, GeocoderServiceError
 from geopy.geocoders import Nominatim
-from geopy.location import Location
 
 
 def select_samples_by_temporal_distance(route, temporal_distance, start_timestamp=None):
@@ -166,131 +164,147 @@ def sample_from_shape(route, spatial_distance):
     return sampled_points
 
 
-def reverse_geocode(sampled_points, nominatim_url):
+def reverse_geocode(route, nominatim_url):
     """
-    This function iterates over a route consisting of points with latitude and longitude values and converts them into
-    real-world addresses using Nominatim's reverse function. This process is called 'reverse geocoding'. The reverse
+    This function iterates over a route consisting of points with longitude and latitude values and converts them into
+    real-world addresses using Nominatim's `reverse` function. This process is called 'reverse geocoding'. The `reverse`
     function maps coordinates to the road network by assigning them to the closest street. Nominatim is Latin for
     'by name'. It is an open source tool that can also be used to search Open Street Map (OSM) data by name and to
     generate synthetic addresses out of OSM points. We run a local instance of Nominatim. For instructions on
     deployment, take a look at the README in the repository root.
-    This function counts and displays two kinds of error occurrences for analytical purposes:
-    - failed_requests: The number of instances that were passed to nominatim_reverse but could not be converted by
-      Nominatim
-    - wrong_values: The number of elements in route that are not of type pt.Point.
+
+
     Further resources:
+
     Nominatim: https://nominatim.org/
-    Documentation reverse: https://geopy.readthedocs.io/en/stable/#geopy.geocoders.Nominatim.reverse
+
+    Documentation `reverse`: https://geopy.readthedocs.io/en/stable/#geopy.geocoders.Nominatim.reverse
 
     Parameters
     ----------
-    sampled_points : rt.Route
-        A route containing geographical points of type pt.Point.
+    route : rt.Route
+        A route containing points that should be reversed.
     nominatim_url : str
-        The url of the available Nominatim instance.
+        The url pointing to a running instance of Nominatim.
 
     Returns
     -------
-    reverse_geocoded_points : list
-        A list of reverse geocoded points represented as geopy.location.Location.
+    reverse_geocoded_points : rt.Route
+        A route that contains of reverse geocoded points represented as pt.Point. The points in the route have the same
+        coordinate unit as the input points in the input route e.g. 'degrees'.
     failed_requests : int
-        The number of requests against Nominatim that failed either because of a missing connection or because of wrong
+        The number of requests to Nominatim that failed either because of a missing connection or because of wrong
         point coordinates.
-    wrong_values : int
-        The number of points in the route that were are instances of pt.Point.
     """
     nominatim = Nominatim(scheme='http', domain=nominatim_url)
-    reverse_geocoded_points = []
+    reverse_geocoded_points = rt.Route()
     failed_requests = 0
-    wrong_values = 0
-    for point in sampled_points:
-        # Check whether a point in the route has the correct data type
-        if isinstance(point, pt.Point):
-            point_deg = [degrees(point.y_lat), degrees(point.x_lon)]
-            reverse_geocoded_point = nominatim_reverse(point_deg, nominatim)
+    if len(route) > 0:
+        input_coordinate_unit_is_radians = route[0].get_coordinates_unit() == 'radians'
+        for point in route:
+            point = point.to_degrees(ignore_warning=True)
+            reverse_geocoded_point = nominatim_reverse(point, nominatim)
             # Check whether a request to Nominatim succeeded. A request might fail due to connection issues or because
             # there are no results for a given point
-            if isinstance(reverse_geocoded_point, Location):
+            if isinstance(reverse_geocoded_point, pt.Point):
+                if input_coordinate_unit_is_radians:
+                    reverse_geocoded_point.to_radians_()
                 reverse_geocoded_points.append(reverse_geocoded_point)
             else:
                 failed_requests += 1
-        else:
-            wrong_values += 1
 
-    if failed_requests > 0:
-        print(f'Failed requesting to reverse geocode {failed_requests} points. Check if you are able to connect to '
-              f'Nominatim, that your instance has the correct map data and that the values of your points are valid.')
-    if wrong_values > 0:
-        print(f'Failed to query Nominatim for {wrong_values} point(s). Check if all points are of type '
-              f'de4l_geodata.geodata.point.Point.')
+        if failed_requests > 0:
+            warnings.warn(f'Reverse geocoding failed for {failed_requests} of {len(route)} points. Make sure, that the '
+                          f'Nominatim service is available and serving the correct map data and that the provided '
+                          f'points are in the correct format.')
 
-    return reverse_geocoded_points, failed_requests, wrong_values
+    return reverse_geocoded_points, failed_requests
 
 
 def nominatim_reverse(point, nominatim):
     """
-    This function calls Nominatim's reverse function to convert a coordinate consisting of latitude and longitude in
-    degrees format into a real-world address. This is achieved by mapping a coordinate to the closest street.
-    The function returns None in case a connection to Nominatim can't be established or a ValueError is raised.
+    This function calls Nominatim's `reverse` function to convert a point into a real-world address. This is achieved by
+    mapping locations to their closest street segment. The function returns None in the case that a connection to
+    Nominatim can't be established or the provided point can not be processed by Nominatim.
+
+
     Further resources:
+
     Documentation reverse: https://geopy.readthedocs.io/en/stable/#geopy.geocoders.Nominatim.reverse
 
     Parameters
     ----------
-    point : list
-        A geographical point consisting of latitude and longitude in degree format represented as a list.
+    point : pt.Point
+        The point to be reversed.
     nominatim : Nominatim
         An instance of Nominatim that is ready to accept requests.
 
     Returns
     -------
-    reversed_point : Location or None
-        In case reverse geocoding succeeds, a location is returned. Otherwise, None is returned.
+    reversed_point : pt.Point or None
+        In case reverse geocoding succeeds, a Point is returned. Otherwise, an error is raised. The output point has
+        the same coordinates unit as the input.
 
     """
-    reversed_point = None
+    reversed_location = None
+    input_coordinates_unit_is_radians = point.get_coordinates_unit() == 'radians'
+    # Nominatim requires latitude/longitude in 'degrees' format
+    point = point.to_degrees(ignore_warning=True)
+    nominatim_input = [point.y_lat, point.x_lon]
 
     try:
-        reversed_point = nominatim.reverse(point)
+        reversed_location = nominatim.reverse(nominatim_input)
     except (ValueError,
             ConnectTimeoutError,
             GeocoderUnavailable,
             ConnectionRefusedError,
             URLError,
             GeocoderServiceError) as error:
-        if isinstance(error, ValueError):
-            print('The latitude and longitude values of the point are not valid.')
-        else:
-            print('Connection to Nominatim could not be established.')
+        warnings.warn(f'Failed to reverse with Nominatim, the following error occurred: {error}')
+
+    if reversed_location is None:
+        raise ValueError(f'Failed to reverse with Nominatim, the result for point {point} was empty. Please check the '
+                         f'coordinates and the map data of Nominatim.')
+    reversed_point = pt.Point([reversed_location.longitude, reversed_location.latitude], coordinates_unit='degrees')
+    if input_coordinates_unit_is_radians:
+        reversed_point.to_radians_()
 
     return reversed_point
 
 
-def get_directions_for_points(start, end, openrouteservice_client, openrouteservice_profile='driving_car'):
+def get_directions_for_points(start, end, openrouteservice_client, openrouteservice_profile='driving-car',
+                              average_speed_kmh=45):
     """
-    Use Openrouteservice to get directions between two geographical points. Directions are instructions within the
-    traffic system that guide an actor towards a destination. A profile can be used to specify this actor's means of
-    moving. Navigation systems are often used to get directions.
+    Use Openrouteservice to get directions between start and end. Directions are instructions within the traffic system
+    that guide an actor towards a destination. A profile can be used to specify this actor's transport mode.
 
     Parameters
     ----------
     start : pt.Point
-        A geographical point in radians format marking the beginning of the route to calculate.
+        A geographical point marking the beginning of the route to calculate.
     end : pt.Point
-        A geographical point in radians format marking the end of the route to calculate.
+        A geographical point marking the end of the route to calculate.
     openrouteservice_client : openrouteservice.client.Client
         A running instance of the Openrouteservice client.
     openrouteservice_profile :
         {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
         'cycling-road', 'cycling-mountain', 'cycling-electric'}
         Specifies the mode of transport to use when calculating directions.
+    average_speed_kmh : float
+        The default speed in kilometers per hour, that is assumed, in case the duration of a route could not be
+        retrieved and needs to be estimated. The default value is representing the average speed of a car in a city.
 
     Returns
     -------
     directions : dict
-        Directions between start and end as a dict. The dict contains distance, duration, navigation instructions and a
-        linestring of the proposed route between start and end. The linestring contains the longitude and latitude of
-        geographical points in radians.
+        Directions between start and end, containing
+        distance : float
+            The distance of the shortest route between start and end in meters.
+        duration : float
+            The duration when moving along the shortest route between start and end with the given transport mode in
+            seconds.
+        route : rt.Route
+            The shortest route between start and end in the same format as the start point.
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
@@ -310,49 +324,81 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
             f'{valid_openrouteservice_profiles}.'
         )
 
-    coordinates = ((degrees(start.x_lon), degrees(start.y_lat)), (degrees(end.x_lon), degrees(end.y_lat)))
+    start_coordinates_unit_is_radians = start.get_coordinates_unit() == 'radians'
+    start = start.to_degrees(ignore_warning=True)
+    end = end.to_degrees(ignore_warning=True)
+    start = start.to_latlon(ignore_warnings=True)
+    end = end.to_latlon(ignore_warnings=True)
+    route = rt.Route([start, end])
+    ors_response = None
+
+    shortest_route = None
+    distance = None
+    duration = None
 
     try:
-        openrouteservice_response = openrouteservice_client.directions(coordinates,
-                                                                       profile=openrouteservice_profile,
-                                                                       format='geojson')
-        routes = openrouteservice_response['features']
-        if len(routes) == 1:
-            directions_node = routes[0]
-        # if there are multiple routing results available, choose the one with the shortest duration
+        ors_response = \
+            openrouteservice_client.directions((start, end), profile=openrouteservice_profile, format='geojson')
+    except Exception:
+        # exceptions are ignored and assumed values will be provided instead (direct connection between start and end)
+        pass
+
+    if ors_response is not None:
+        # ors response can contain multiple nodes (each node contains details for one shortest route proposition)
+        all_nodes = ors_response['features']
+
+        # get all nodes that have a distance (which is sometimes missing)
+        nodes_with_distance = [node for node in all_nodes if 'distance' in node['properties']['summary'].keys()]
+
+        # if multiple nodes available, choose the one with the shortest distance, if available at all
+        distances = [node['properties']['summary']['distance'] for node in nodes_with_distance]
+        if len(distances) > 0:
+            min_distance = min(distances)
+            chosen_node = \
+                [node for node in nodes_with_distance if node['properties']['summary']['distance'] == min_distance][0]
         else:
-            times = [route['properties']['summary']['duration'] for route in routes]
-            min_time = min(times)
-            directions_node = [route for route in routes if route['properties']['summary']['duration'] == min_time][0]
-        # extract the actual directions out of the result
-        directions = directions_node['properties']['segments'][0]
-        directions['line_string'] = directions_node['geometry']['coordinates']
-        route = directions['line_string']
-        # convert degree format to radians format
-        for point in route:
-            point[0] = radians(point[0])
-            point[1] = radians(point[1])
-        directions['line_string'] = route
+            # if distance not available at all, choose the first available node and calculate the missing parameters
+            chosen_node = all_nodes[0]
+        shortest_route = rt.Route([
+            pt.Point(point, coordinates_unit='degrees') for point in chosen_node['geometry']['coordinates']
+        ])
 
-    except openrouteservice.exceptions.ApiError:
-        directions = {}
+        route_properties = chosen_node['properties']['summary']
+        if 'distance' in route_properties.keys():
+            distance = route_properties['distance']
 
-    return directions
+        if 'duration' in route_properties.keys():
+            duration = route_properties['duration']
+
+    if shortest_route is None:
+        warnings.warn(f'Shortest route could not be retrieved for {route}. The input route is returned.')
+        shortest_route = route
+    if distance is None:
+        distance = pt.get_distance(start, end)
+        warnings.warn('Distance is not available. The direct connection (as the crow flies) will be used.')
+    if duration is None:
+        duration = distance / (average_speed_kmh * 1_000 / 3_600)
+        warnings.warn(f'Duration is not available and will be estimated based on an assumed speed of '
+                      f'{average_speed_kmh} km/h.')
+
+    if start_coordinates_unit_is_radians:
+        shortest_route.to_radians_()
+
+    return {'route': shortest_route, 'distance': distance, 'duration': duration}
 
 
 def get_directions_for_route(route, openrouteservice_base_path, openrouteservice_profile='driving-car'):
     """
-    Calculate directions between all pairs of geographical points of a route. This is done by using Openrouteservice and
-    its directions functionality. Directions are instructions within the traffic system that guide an actor towards a
-    destination. A profile can be used to specify this actor's means of moving. Navigation systems are often used to
-    get directions.
+    Calculate directions between all consecutive pairs of geographical points of a route. This is done by using
+    Openrouteservice and its `directions` functionality. Directions are instructions within the traffic system that
+    guide an actor towards a destination. A profile can be used to specify this actor's transport mode.
 
     Parameters
     ----------
     route : rt.Route
-        A route containing geographical points.
+        The route to get directions for.
     openrouteservice_base_path : str
-        The base address of the available instance of Openrouteservice. Its structure should be '[host]:[port]'.
+        The base address of an available instance of Openrouteservice. Its structure should be '[host]:[port]'.
     openrouteservice_profile :
         {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
         'cycling-road', 'cycling-mountain', 'cycling-electric'}
@@ -361,10 +407,10 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
 
     Returns
     -------
-    directions_for_route : list
-        A list containing directions connecting every consecutive pair of points from the input. Every entry is a dict
-        that contains distance, duration, navigation instructions and a linestring of the proposed route between start
-        and end.
+    directions_for_route : List
+        A list containing directions connecting every consecutive pair of points from route. Every entry is a dict
+        that contains the keys 'distance', 'duration' and 'route' for the shortest route between the respective start
+        and end point.
     """
     valid_openrouteservice_profiles = ['driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
                                        'cycling-road', 'cycling-mountain', 'cycling-electric']
