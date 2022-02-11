@@ -27,7 +27,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
         route is empty the returned route is empty as well. The points in the route are assumed to be sorted ascending
         by their timestamp.
     temporal_distance : pd.Timedelta
-        The temporal distance in seconds between sampled points.
+        The temporal distance between sampled points.
     start_timestamp : pd.Timestamp
         An optional timestamp that marks the starting point for selection of samples. If None, sampling starts at the
         first route point.
@@ -41,7 +41,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
         raise ValueError(
             'Wrong value for parameter route. Make sure it is of type de4l_geodata.geodata.route.Route and its points '
             'have timestamps.'
-         )
+        )
 
     if not isinstance(temporal_distance, pd.Timedelta) or temporal_distance.seconds < 0:
         raise ValueError(
@@ -65,9 +65,9 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
 
     # Iterate over the rest of the route and check whether current and next point's timestamps are temporal_distance
     # apart
-    for next_idx in range(current_idx+1, len(route)):
+    for next_idx in range(current_idx + 1, len(route)):
         next_timestamp = route[next_idx].timestamp
-        if (next_timestamp-route[current_idx].timestamp) >= temporal_distance:
+        if (next_timestamp - route[current_idx].timestamp) >= temporal_distance:
             sampled_points.append(route[next_idx])
             current_idx = next_idx
 
@@ -387,7 +387,7 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
     end_idx = len(route) - 1
     for idx in range(end_idx):
         start = route[idx]
-        end = route[idx+1]
+        end = route[idx + 1]
         directions = get_directions_for_points(start,
                                                end,
                                                openrouteservice_client=client,
