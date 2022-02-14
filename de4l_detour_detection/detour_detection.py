@@ -278,7 +278,7 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
         A geographical point in radians format marking the beginning of the route to calculate.
     end : pt.Point
         A geographical point in radians format marking the end of the route to calculate.
-    openrouteservice_client : openrouteservices.client.Client
+    openrouteservice_client : openrouteservice.client.Client
         A running instance of the Openrouteservice client.
     openrouteservice_profile :
         {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
