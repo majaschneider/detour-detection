@@ -7,10 +7,10 @@ from datetime import datetime as dt
 
 import openrouteservice
 import pandas as pd
-import requests
 from de4l_geodata.geodatasets import de4l
 from de4l_geodata.geodata import route as rt
 from de4l_geodata.geodata import point as pt
+from geopy import Nominatim
 
 from de4l_detour_detection import detour_detection
 
@@ -209,29 +209,33 @@ class TestMetric(unittest.TestCase):
             self.assertAlmostEqual(expected_sampled_points[idx].y_lat, sampled_points[idx].y_lat, 10)
 
     def test_reverse_geocode(self):
-        """Test of reverse geocoding of geographical points to addresses.
+        """Test of reverse geocoding of a list of geographical points to addresses.
         """
-        nominatim_url = 'localhost:1234'
+        # todo: test reverse geocoding, once an instance of Nominatim is available from GitLab
+        # nominatim_url = 'localhost:8080'
+        # route = rt.Route(pt.Point([1, 1], coordinates_unit='radians'))
+        #
+        # reversed_route, failed_requests = detour_detection.reverse_geocode(route, nominatim_url)
+        # # Expect no failed requests
+        # self.assertEqual(rt.Route, reversed_route)
+        # self.assertEqual(0, failed_requests)
 
-        to_reverse = [
-            pt.Point([0.62235962758, 2.439017920469]),  # Tokyo Tower Tokyo, real coordinates
-            pt.Point([3.62235962758, 4.439017920469]),  # Radians values too high, bogus coordinates
-            # The following values are not instances of pt.Point
-            [0.9166228376, 0.233458504512],
-            ['0.9166228376', '0.233458504512'],
-            123,
-            '456'
-        ]
+    def test_nominatim_reverse(self):
+        """Test of reverse geocoding of a geographical point to an address.
+        """
+        nominatim_url = 'localhost:8080'
+        nominatim = Nominatim(scheme='http', domain=nominatim_url)
 
-        reversed_route, failed_requests, wrong_values = detour_detection.reverse_geocode(to_reverse, nominatim_url)
-        # Expect two failed requests and four wrong values
-        self.assertEqual([], reversed_route)
-        self.assertEqual(2, failed_requests)
-        self.assertEqual(4, wrong_values)
+        to_reverse = [(pt.Point([0.62235962758, 2.439017920469]), ValueError)]    # Tokyo Tower Tokyo, real coordinates
+
+        # There should be value errors for every entry and different logs about the individual errors
+        for point, expected_error in to_reverse:
+            self.assertRaises(expected_error, detour_detection.nominatim_reverse, point, nominatim)
 
     def test_get_directions_for_points(self):
         """Test of the shortest route calculation between two geographical points.
         """
+        # todo: test ors services, once an instance of ORS is available from GitLab
         start_point = pt.Point([0.9, 0.1])
         end_point = pt.Point([0.8, 0.2])
 
@@ -262,8 +266,13 @@ class TestMetric(unittest.TestCase):
     def test_get_directions_for_route(self):
         """Test of the shortest route calculation between each two geographical points of a route.
         """
-        correct_route = rt.Route([pt.Point([0.9, 0.1]), pt.Point([0.8, 0.2])])
+        correct_route = rt.Route([pt.Point([-8.629335172276479, 41.15916914599747], coordinates_unit='degrees'),
+                                  pt.Point([-8.659118422444477, 41.16278779752667], coordinates_unit='degrees')])
         base_path = 'localhost:8008'
+
+        # todo: test ors services, once an instance of ORS is available from GitLab
+        # Successfully calculate shortest route details
+        # detour_detection.get_directions_for_route(correct_route, base_path)
 
         # Raise because of an invalid route
         for wrong_route in [[], rt.Route(), rt.Route([pt.Point([0.4, 0.9])])]:
@@ -279,12 +288,9 @@ class TestMetric(unittest.TestCase):
                           openrouteservice_base_path=base_path,
                           openrouteservice_profile='rocket_spaceship')
 
-        # Raise in case of a wrong path
-        for wrong_path in ['localhost:9008', 'localhos:8008', 'localhost']:
-            self.assertRaises(requests.exceptions.ConnectionError,
-                              detour_detection.get_directions_for_route,
-                              route=correct_route,
-                              openrouteservice_base_path=wrong_path)
+        # Warn in case of a broken connection
+        for _ in ['localhost:9008', 'localhos:8008', 'localhost']:
+            self.assertWarns(UserWarning)
 
 
 if __name__ == '__main__':
