@@ -327,8 +327,6 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
     start_coordinates_unit_is_radians = start.get_coordinates_unit() == 'radians'
     start = start.to_degrees(ignore_warnings=True)
     end = end.to_degrees(ignore_warnings=True)
-    start = start.to_latlon(ignore_warnings=True)
-    end = end.to_latlon(ignore_warnings=True)
     route = rt.Route([start, end])
     ors_response = None
 
