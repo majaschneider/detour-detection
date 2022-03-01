@@ -249,7 +249,7 @@ def nominatim_reverse(point, nominatim):
     reversed_location = None
     input_coordinates_unit_is_radians = point.get_coordinates_unit() == 'radians'
     # Nominatim requires latitude/longitude in 'degrees' format
-    point = point.to_degrees(ignore_warning=True)
+    point = point.to_degrees(ignore_warnings=True)
     nominatim_input = [point.y_lat, point.x_lon]
 
     try:
@@ -325,10 +325,8 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
         )
 
     start_coordinates_unit_is_radians = start.get_coordinates_unit() == 'radians'
-    start = start.to_degrees(ignore_warning=True)
-    end = end.to_degrees(ignore_warning=True)
-    start = start.to_latlon(ignore_warnings=True)
-    end = end.to_latlon(ignore_warnings=True)
+    start = start.to_degrees(ignore_warnings=True)
+    end = end.to_degrees(ignore_warnings=True)
     route = rt.Route([start, end])
     ors_response = None
 
