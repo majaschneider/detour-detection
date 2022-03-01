@@ -226,7 +226,7 @@ class TestMetric(unittest.TestCase):
         nominatim_url = 'localhost:8080'
         nominatim = Nominatim(scheme='http', domain=nominatim_url)
 
-        to_reverse = [(pt.Point([0.62235962758, 2.439017920469]), ValueError)]    # Tokyo Tower Tokyo, real coordinates
+        to_reverse = [(pt.Point([2.439017920469, 0.62235962758]), ValueError)]    # Tokyo Tower Tokyo, real coordinates
 
         # There should be value errors for every entry and different logs about the individual errors
         for point, expected_error in to_reverse:

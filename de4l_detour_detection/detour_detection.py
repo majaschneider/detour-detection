@@ -254,6 +254,7 @@ def nominatim_reverse(point, nominatim):
     input_coordinates_unit_is_radians = point.get_coordinates_unit() == 'radians'
     # Nominatim requires latitude/longitude in 'degrees' format
     point = point.to_degrees(ignore_warnings=True)
+    reversed_point = point.deep_copy()
     nominatim_input = [point.y_lat, point.x_lon]
 
     try:
@@ -269,7 +270,8 @@ def nominatim_reverse(point, nominatim):
     if reversed_location is None:
         raise ValueError(f'Failed to reverse with Nominatim, the result for point {point} was empty. Please check the '
                          f'coordinates and the map data of Nominatim.')
-    reversed_point = pt.Point([reversed_location.longitude, reversed_location.latitude], coordinates_unit='degrees')
+    reversed_point.set_x_lon(reversed_location.longitude)
+    reversed_point.set_y_lat(reversed_location.latitude)
     if input_coordinates_unit_is_radians:
         reversed_point.to_radians_()
 
