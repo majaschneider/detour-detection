@@ -164,7 +164,7 @@ def sample_from_shape(route, spatial_distance):
     return sampled_points
 
 
-def reverse_geocode(route, nominatim_url):
+def reverse_geocode(route, nominatim_url, scheme='https'):
     """
     This function iterates over a route consisting of points with longitude and latitude values and converts them into
     real-world addresses using Nominatim's `reverse` function. This process is called 'reverse geocoding'. The `reverse`
@@ -186,6 +186,8 @@ def reverse_geocode(route, nominatim_url):
         A route containing points that should be reversed.
     nominatim_url : str
         The url pointing to a running instance of Nominatim.
+    scheme : str
+        The protocol to be used for openrouteservice queries, e.g. http or https.
 
     Returns
     -------
@@ -196,7 +198,7 @@ def reverse_geocode(route, nominatim_url):
         The number of requests to Nominatim that failed either because of a missing connection or because of wrong
         point coordinates.
     """
-    nominatim = Nominatim(scheme='http', domain=nominatim_url)
+    nominatim = Nominatim(scheme=scheme, domain=nominatim_url)
     reverse_geocoded_points = rt.Route()
     failed_requests = 0
     if len(route) > 0:
@@ -385,7 +387,7 @@ def get_directions_for_points(start, end, openrouteservice_client, openrouteserv
     return {'route': shortest_route, 'distance': distance, 'duration': duration}
 
 
-def get_directions_for_route(route, openrouteservice_base_path, openrouteservice_profile='driving-car'):
+def get_directions_for_route(route, openrouteservice_base_path, scheme='https', openrouteservice_profile='driving-car'):
     """
     Calculate directions between all consecutive pairs of geographical points of a route. This is done by using
     Openrouteservice and its `directions` functionality. Directions are instructions within the traffic system that
@@ -397,6 +399,8 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
         The route to get directions for.
     openrouteservice_base_path : str
         The base address of an available instance of Openrouteservice. Its structure should be '[host]:[port]'.
+    scheme : str
+        The protocol to be used for openrouteservice queries, e.g. http or https.
     openrouteservice_profile :
         {'driving-car', 'driving-hgv', 'foot-walking', 'foot-hiking', 'cycling-regular',
         'cycling-road', 'cycling-mountain', 'cycling-electric'}
@@ -424,7 +428,7 @@ def get_directions_for_route(route, openrouteservice_base_path, openrouteservice
             f'{valid_openrouteservice_profiles}.'
         )
 
-    ors_url = 'http://' + openrouteservice_base_path + '/ors'
+    ors_url = f'{scheme}://{openrouteservice_base_path}/ors'
     client = openrouteservice.Client(base_url=ors_url)
 
     directions_for_route = []
