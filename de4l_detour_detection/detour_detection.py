@@ -148,14 +148,20 @@ def sample_from_shape(route, spatial_distance):
     previous_point = first_point
 
     remaining_spatial_distance = spatial_distance
-    for current_point in route:
+    for index in range(len(route)):
+        current_point = route[index]
+        if index > 0:
+            previous_point = route[index - 1]
         # if next route point is the last and the current distance to it is smaller than remaining_spatial_distance
-        if current_point is last_point and remaining_spatial_distance > pt.get_distance(previous_point, current_point):
+        if current_point is last_point and remaining_spatial_distance > pt.get_distance(previous_point,
+                                                                                        current_point):
             break
         while remaining_spatial_distance <= pt.get_distance(previous_point, current_point):
             # sample an interpolated point
-            ratio_interpolated_point = spatial_distance / pt.get_distance(previous_point, current_point)
-            interpolated_point = pt.get_interpolated_point(previous_point, current_point, ratio_interpolated_point)
+            distance_last_to_current = pt.get_distance(previous_point, current_point)
+            ratio_interpolated_point = remaining_spatial_distance / distance_last_to_current
+            interpolated_point = pt.get_interpolated_point(previous_point, current_point,
+                                                           ratio_interpolated_point)
             sampled_points.append(interpolated_point)
             previous_point = interpolated_point
             remaining_spatial_distance = spatial_distance
