@@ -145,22 +145,24 @@ def sample_from_shape(route, spatial_distance):
     first_point = route[0].deep_copy()
     last_point = route[len(route) - 1]
     sampled_points = rt.Route([first_point])
-    previous_point = first_point
 
-    remaining_spatial_distance = spatial_distance
-    for current_point in route:
-        # if next route point is the last and the current distance to it is smaller than remaining_spatial_distance
-        if current_point is last_point and remaining_spatial_distance > pt.get_distance(previous_point, current_point):
+    # read segment per segment and check its length
+    remaining_distance_to_go = spatial_distance
+    for index in range(1, len(route)):
+        segment_start = route[index - 1]
+        segment_end = route[index]
+        # if segment_end is the route's last point and its length is smaller than the remaining_distance_to_go
+        if segment_end is last_point and remaining_distance_to_go > pt.get_distance(segment_start, segment_end):
             break
-        while remaining_spatial_distance <= pt.get_distance(previous_point, current_point):
-            # sample an interpolated point
-            ratio_interpolated_point = spatial_distance / pt.get_distance(previous_point, current_point)
-            interpolated_point = pt.get_interpolated_point(previous_point, current_point, ratio_interpolated_point)
+        while remaining_distance_to_go <= pt.get_distance(segment_start, segment_end):
+            # sample on the current segment
+            ratio_interpolated_point = remaining_distance_to_go / pt.get_distance(segment_start, segment_end)
+            interpolated_point = pt.get_interpolated_point(segment_start, segment_end, ratio_interpolated_point)
             sampled_points.append(interpolated_point)
-            previous_point = interpolated_point
-            remaining_spatial_distance = spatial_distance
+            segment_start = interpolated_point
+            remaining_distance_to_go = spatial_distance
         # advance the remaining spatial distance on the current segment
-        remaining_spatial_distance -= pt.get_distance(previous_point, current_point)
+        remaining_distance_to_go -= pt.get_distance(segment_start, segment_end)
     return sampled_points
 
 
