@@ -231,7 +231,7 @@ def reverse_geocode(route, nominatim_url, scheme='https'):
     return reverse_geocoded_points, failed_requests
 
 
-def nominatim_reverse(point, nominatim):
+def nominatim_reverse(point, nominatim, zoom_level=17):
     """
     This function calls Nominatim's `reverse` function to convert a point into a real-world address. This is achieved by
     mapping locations to their closest street segment. The function returns None in the case that a connection to
@@ -248,6 +248,17 @@ def nominatim_reverse(point, nominatim):
         The point to be reversed.
     nominatim : Nominatim
         An instance of Nominatim that is ready to accept requests.
+    zoom_level : {3, 5, 8, 10, 14, 16, 17, 18}
+        The level of detail required for the address reversing. Values correspond to following details levels:
+            zoom 	address detail
+            3 	country
+            5 	state
+            8 	county
+            10 	city
+            14 	suburb
+            16 	major streets
+            17 	major and minor streets
+            18 	building
 
     Returns
     -------
@@ -264,7 +275,7 @@ def nominatim_reverse(point, nominatim):
     nominatim_input = [point.y_lat, point.x_lon]
 
     try:
-        reversed_location = nominatim.reverse(nominatim_input)
+        reversed_location = nominatim.reverse(nominatim_input, zoom=zoom_level)
     except (ValueError,
             ConnectTimeoutError,
             GeocoderUnavailable,
