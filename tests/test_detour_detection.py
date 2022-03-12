@@ -86,8 +86,8 @@ class TestMetric(unittest.TestCase):
             # With start timestamp later than the timestamps to sample
             (timedeltas[3], start_timestamp_too_late, []),
         ]:
-            sampled_points = detour_detection.select_samples_by_temporal_distance(route, temporal_distance,
-                                                                                  start_timestamp)
+            _, sampled_points = detour_detection.select_samples_by_temporal_distance(route, temporal_distance,
+                                                                                     start_timestamp)
             expected_timestamps = [timestamps[idx] for idx in expected_indices]
             sampled_timestamps = [point.timestamp for point in sampled_points]
             self.assertEqual(expected_timestamps, sampled_timestamps)
@@ -143,7 +143,7 @@ class TestMetric(unittest.TestCase):
         point5 = point4.add_vector(100, math.radians(90))
 
         route = rt.Route([point1, point2, point3, point4, point5])
-        selected_samples = detour_detection.select_samples_by_spatial_distance(route, spatial_distance=125.0)
+        _, selected_samples = detour_detection.select_samples_by_spatial_distance(route, spatial_distance=125.0)
         expected_result = rt.Route([point1, point3, point5])
 
         self.assertEqual(expected_result, selected_samples)

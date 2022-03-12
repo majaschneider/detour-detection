@@ -32,6 +32,8 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
 
     Returns
     -------
+    sampled_points_ids : List
+        The list of the indices of the points from route, that were sampled according to the temporal distance.
     sampled_points : rt.Route
         A route containing the sampled points according to the temporal distance.
     """
@@ -46,7 +48,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
             'Wrong value for parameter temporal distance. Check if it is of type pandas.Timedelta and larger than zero.'
         )
 
-    sampled_points = rt.Route()
+    sampled_points_ids = []
     current_idx = 0
 
     # If a start timestamp is given, iterate over the route until it is reached
@@ -59,17 +61,18 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
 
     # Add first point before iterating.
     if current_idx < len(route):
-        sampled_points.append(route[current_idx])
+        sampled_points_ids.append(current_idx)
 
     # Iterate over the rest of the route and check whether current and next point's timestamps are temporal_distance
     # apart
     for next_idx in range(current_idx + 1, len(route)):
         next_timestamp = route[next_idx].timestamp
         if (next_timestamp - route[current_idx].timestamp) >= temporal_distance:
-            sampled_points.append(route[next_idx])
+            sampled_points_ids.append(next_idx)
             current_idx = next_idx
+    sampled_points = rt.Route([route[i] for i in sampled_points_ids])
 
-    return sampled_points
+    return sampled_points_ids, sampled_points
 
 
 def select_samples_by_spatial_distance(route, spatial_distance, start_point_idx=0):
@@ -91,6 +94,8 @@ def select_samples_by_spatial_distance(route, spatial_distance, start_point_idx=
 
     Returns
     -------
+    sampled_points_ids : List
+        The list of the indices of the points from route, that were sampled according to the spatial distance.
     sampled_points : rt.Route
         A route containing the sampled points according to the spatial distance.
     """
@@ -100,20 +105,21 @@ def select_samples_by_spatial_distance(route, spatial_distance, start_point_idx=
     if not isinstance(spatial_distance, (int, float)) or spatial_distance < 0:
         raise ValueError('Wrong value for parameter spatial_distance. Check that it is a number and greater than zero.')
 
-    sampled_points = rt.Route()
+    sampled_points_ids = []
     current_idx = start_point_idx
 
     # Add first point before iterating
     if current_idx < len(route):
-        sampled_points.append(route[current_idx])
+        sampled_points_ids.append(current_idx)
 
     # Iterate over the rest of the route and check whether current and next point are spatial_distance apart
     for next_idx in range(current_idx + 1, len(route)):
         if pt.get_distance(route[current_idx], route[next_idx]) >= spatial_distance:
-            sampled_points.append(route[next_idx])
+            sampled_points_ids.append(next_idx)
             current_idx = next_idx
+    sampled_points = rt.Route([route[i] for i in sampled_points_ids])
 
-    return sampled_points
+    return sampled_points_ids, sampled_points
 
 
 def sample_from_shape(route, spatial_distance):
