@@ -210,7 +210,7 @@ def reverse_geocode(route, nominatim_url, scheme='https'):
     if len(route) > 0:
         input_coordinate_unit_is_radians = route[0].get_coordinates_unit() == 'radians'
         for point in route:
-            point = point.to_degrees(ignore_warning=True)
+            point = point.to_degrees(ignore_warnings=True)
             reverse_geocoded_point = nominatim_reverse(point, nominatim)
             # Check whether a request to Nominatim succeeded. A request might fail due to connection issues or because
             # there are no results for a given point

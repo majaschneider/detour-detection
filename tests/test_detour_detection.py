@@ -211,31 +211,76 @@ class TestMetric(unittest.TestCase):
     def test_reverse_geocode(self):
         """Test of reverse geocoding of a list of geographical points to addresses.
         """
-        # todo: test reverse geocoding, once an instance of Nominatim is available from GitLab
-        # nominatim_url = 'localhost:8080'
-        # route = rt.Route(pt.Point([1, 1], coordinates_unit='radians'))
-        #
-        # reversed_route, failed_requests = detour_detection.reverse_geocode(route, nominatim_url)
-        # # Expect no failed requests
-        # self.assertEqual(rt.Route, reversed_route)
-        # self.assertEqual(0, failed_requests)
+        expected_result = [[-0.1503190192394637, 0.7180591973725765],
+                           [-0.1503190192394637, 0.7180591973725765],
+                           [-0.1503190192394637, 0.7180591973725765],
+                           [-0.15033208681685373, 0.7180548645927083],
+                           [-0.15033831499072545, 0.7180598309270949]]
+
+        nominatim_url = '172.17.2.117:50002'
+        # nominatim_url = 'service.enterprise.informatik.uni-leipzig.de/de4l-privacy/nominatim-portugal'
+        route = rt.Route([pt.Point([-0.1503001629995055, 0.7180522256548794], coordinates_unit='radians'),
+                          pt.Point([-0.15031137904569647, 0.7180540088788484], coordinates_unit='radians'),
+                          pt.Point([-0.15032157681095093, 0.7180556252589022], coordinates_unit='radians'),
+                          pt.Point([-0.15033237891922724, 0.7180534718660038], coordinates_unit='radians'),
+                          pt.Point([-0.15033650215127992, 0.7180606795104065], coordinates_unit='radians')])
+
+        reversed_route, failed_requests = detour_detection.reverse_geocode(route, nominatim_url, scheme='http')
+        # Expect no failed requests
+        self.assertEqual(expected_result, reversed_route)
+        self.assertEqual(0, failed_requests)
 
     def test_nominatim_reverse(self):
         """Test of reverse geocoding of a geographical point to an address.
         """
+        # Test with real data
+        nominatim_url = '172.17.2.117:50002'
+        # nominatim_url = 'service.enterprise.informatik.uni-leipzig.de/de4l-privacy/nominatim-portugal'
+        # Praça do Comércio
+        to_reverse = pt.Point([-9.136744, 38.707779], coordinates_unit='degrees')
+        expected = pt.Point([-9.136750297435203, 38.708262250000004], coordinates_unit='degrees')
+        nominatim_client = Nominatim(scheme='http', domain=nominatim_url)
+        reversed_point = detour_detection.nominatim_reverse(to_reverse, nominatim_client)
+
+        self.assertEqual(expected, reversed_point)
+
+        # Test with the wrong Nominatim address
         nominatim_url = 'localhost:8080'
-        nominatim = Nominatim(scheme='http', domain=nominatim_url)
+        nominatim_client = Nominatim(scheme='http', domain=nominatim_url)
 
         to_reverse = [(pt.Point([0.62235962758, 2.439017920469]), ValueError)]    # Tokyo Tower Tokyo, real coordinates
 
         # There should be value errors for every entry and different logs about the individual errors
         for point, expected_error in to_reverse:
-            self.assertRaises(expected_error, detour_detection.nominatim_reverse, point, nominatim)
+            self.assertRaises(expected_error, detour_detection.nominatim_reverse, point, nominatim_client)
 
     def test_get_directions_for_points(self):
         """Test of the shortest route calculation between two geographical points.
         """
-        # todo: test ors services, once an instance of ORS is available from GitLab
+        # Test with real data and ors service
+        expected_directions_shortened = {
+            'len_route': 21,
+            'second_point': [-8.629231, 41.159014],
+            'second_last_point': [-8.632118, 41.158457],
+            'distance': 330.0,
+            'duration': 43.0
+        }
+        start_point = pt.Point([-8.629232, 41.159169], coordinates_unit='degrees')
+        end_point = pt.Point([-8.632191, 41.158466], coordinates_unit='degrees')
+
+        ors_url = 'http://172.17.2.117:50003/ors'
+        # ors_url = 'https://service.scadsai.uni-leipzig.de/de4l-privacy/open-route-portugal/ors'
+        ors = openrouteservice.Client(base_url=ors_url)
+        directions = detour_detection.get_directions_for_points(start_point, end_point, ors)
+
+        len_directions = len(directions['route'])
+        self.assertEqual(expected_directions_shortened['len_route'], len_directions)
+        self.assertEqual(expected_directions_shortened['second_point'], directions['route'][1])
+        self.assertEqual(expected_directions_shortened['second_last_point'], directions['route'][len_directions-2])
+        self.assertEqual(expected_directions_shortened['distance'], directions['distance'])
+        self.assertEqual(expected_directions_shortened['duration'], directions['duration'])
+
+        # Test error behavior with fake data
         start_point = pt.Point([0.9, 0.1])
         end_point = pt.Point([0.8, 0.2])
 
@@ -266,13 +311,31 @@ class TestMetric(unittest.TestCase):
     def test_get_directions_for_route(self):
         """Test of the shortest route calculation between each two geographical points of a route.
         """
-        correct_route = rt.Route([pt.Point([-8.629335172276479, 41.15916914599747], coordinates_unit='degrees'),
-                                  pt.Point([-8.659118422444477, 41.16278779752667], coordinates_unit='degrees')])
-        base_path = 'localhost:8008'
+        given_route = rt.Route([pt.Point([-8.629232, 41.159169], coordinates_unit='degrees'),
+                                pt.Point([-8.630124, 41.158447], coordinates_unit='degrees'),
+                                pt.Point([-8.632191, 41.158466], coordinates_unit='degrees')])
 
-        # todo: test ors services, once an instance of ORS is available from GitLab
-        # Successfully calculate shortest route details
-        # detour_detection.get_directions_for_route(correct_route, base_path)
+        expected_directions = [
+            {
+                'len_route': 12,
+                'distance': 137.5,
+                'duration': 19.0
+            },
+            {
+                'len_route': 11,
+                'distance': 192.8,
+                'duration': 24.0
+            }
+        ]
+
+        base_path = '172.17.2.117:50003'
+        # base_path = 'service.scadsai.uni-leipzig.de/de4l-privacy/open-route-portugal'
+        directions = detour_detection.get_directions_for_route(given_route, base_path, scheme='http')
+
+        for index in [0, 1]:
+            self.assertEqual(expected_directions[index]['len_route'], len(directions[index]['route']))
+            self.assertEqual(expected_directions[index]['distance'], directions[index]['distance'])
+            self.assertEqual(expected_directions[index]['duration'], directions[index]['duration'])
 
         # Raise because of an invalid route
         for wrong_route in [[], rt.Route(), rt.Route([pt.Point([0.4, 0.9])])]:
@@ -284,7 +347,7 @@ class TestMetric(unittest.TestCase):
         # Raise because of a wrong openrouteservice profile
         self.assertRaises(ValueError,
                           detour_detection.get_directions_for_route,
-                          route=correct_route,
+                          route=given_route,
                           openrouteservice_base_path=base_path,
                           openrouteservice_profile='rocket_spaceship')
 
