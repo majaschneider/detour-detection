@@ -8,8 +8,8 @@ import pandas as pd
 import numpy as np
 import openrouteservice
 from urllib3.exceptions import ConnectTimeoutError
-from de4l_geodata.geodata import point as pt
-from de4l_geodata.geodata import route as rt
+from geodata.geodata import point as pt
+from geodata.geodata import route as rt
 from geopy.exc import GeocoderUnavailable, GeocoderServiceError
 from geopy.geocoders import Nominatim
 
@@ -23,7 +23,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
     Parameter
     ---------
     route : rt.Route
-        A route object containing trajectory data represented as de4l_geodata.geodata.point_t.PointT. If the parameter
+        A route object containing trajectory data represented as geodata.geodata.point_t.PointT. If the parameter
         route is empty the returned route is empty as well. The points in the route are assumed to be sorted ascending
         by their timestamp.
     temporal_distance : pd.Timedelta
@@ -41,7 +41,7 @@ def select_samples_by_temporal_distance(route, temporal_distance, start_timestam
     """
     if not (isinstance(route, rt.Route) and route.has_timestamps()):
         raise ValueError(
-            'Wrong value for parameter route. Make sure it is of type de4l_geodata.geodata.route.Route and its points '
+            'Wrong value for parameter route. Make sure it is of type geodata.geodata.route.Route and its points '
             'have timestamps.'
         )
 
@@ -102,7 +102,7 @@ def select_samples_by_spatial_distance(route, spatial_distance, start_point_idx=
         A route containing the sampled points according to the spatial distance.
     """
     if not isinstance(route, rt.Route):
-        raise ValueError('Wrong value for parameter route. Make sure it is of type de4l_geodata.geodata.route.Route.')
+        raise ValueError('Wrong value for parameter route. Make sure it is of type geodata.geodata.route.Route.')
 
     if not isinstance(spatial_distance, (int, float)) or spatial_distance < 0:
         raise ValueError('Wrong value for parameter spatial_distance. Check that it is a number and greater than zero.')
@@ -442,7 +442,7 @@ def get_directions_for_route(route, openrouteservice_base_path, scheme='https', 
 
     if not isinstance(route, rt.Route) or len(route) < 2:
         raise ValueError(
-            'Failed to get connecting routes. Make sure to pass a route of type de4l_geodata.geodata.route.Route that '
+            'Failed to get connecting routes. Make sure to pass a route of type geodata.geodata.route.Route that '
             'contains at least two points.'
         )
     if openrouteservice_profile not in valid_openrouteservice_profiles:

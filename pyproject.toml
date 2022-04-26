@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "de4l-detour-detection"
+name = "detour-detection"
 version = "0.1.2"
 description = "A package for estimating the exposure of private information in trajectory data by detecting detours."
 repository = "https://github.com/majaschneider/detour-detection.git"
@@ -20,7 +20,7 @@ geopy = "^2.2.0"
 urllib3 = "^1.26.7"
 openrouteservice = "^2.3.3"
 torch = { version = "^1.10.2", optional = true }
-de4l_geodata = { git = "https://github.com/majaschneider/geodata.git", branch = "main" }
+geodata = { git = "https://github.com/majaschneider/geodata.git", branch = "main" }
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"

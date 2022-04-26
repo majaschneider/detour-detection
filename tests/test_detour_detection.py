@@ -7,13 +7,13 @@ from datetime import datetime as dt
 
 import openrouteservice
 import pandas as pd
-from de4l_geodata.geodatasets import de4l
-from de4l_geodata.geodata import route as rt
-from de4l_geodata.geodata import point as pt
+from geodata.geodatasets import de4l
+from geodata.geodata import route as rt
+from geodata.geodata import point as pt
 from geopy.geocoders import Nominatim
-from de4l_geodata.helper import parser
+from geodata.helper import parser
 
-from de4l_detour_detection import detour_detection
+from detour_detection import detour_detection
 
 
 # todo: move to geodata

@@ -1,4 +1,4 @@
-# de4l-detour-detection
+# detour-detection
 
 <h1>Estimate exposure of private information in trajectory data based on detours.</h1>
 <p>This algorithm calculates the difference from the ideal path between
@@ -8,7 +8,7 @@ selected geographical points. The higher the difference, the higher the privacy 
 
 Install this package in your repository via pip:
 ```bash
-pip install git+ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection.git
+pip install git+https://github.com/majaschneider/detour-detection.git
 ```
 
 ## Setup
