@@ -2,7 +2,7 @@
 name = "de4l-detour-detection"
 version = "0.1.2"
 description = "A package for estimating the exposure of private information in trajectory data by detecting detours."
-repository = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection"
+repository = "https://github.com/majaschneider/detour-detection.git"
 authors = ["Maja Schneider","Lukas Gehrke"]
 license = "MIT"
 readme = "README.md"
@@ -20,7 +20,7 @@ geopy = "^2.2.0"
 urllib3 = "^1.26.7"
 openrouteservice = "^2.3.3"
 torch = { version = "^1.10.2", optional = true }
-de4l_geodata = { git = "ssh://git@git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-geodata.git", branch = "main" }
+de4l_geodata = { git = "https://github.com/majaschneider/geodata.git", branch = "main" }
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
@@ -30,8 +30,8 @@ pylint = "^2.12.2"
 torch = ["torch"]
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection/-/issues"
-"Source" = "https://git.informatik.uni-leipzig.de/scads/de4l/privacy/de4l-detour-detection"
+"Bug Tracker" = "https://github.com/majaschneider/detour-detection/issues"
+"Source" = "https://github.com/majaschneider/detour-detection.git"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
